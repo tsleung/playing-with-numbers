@@ -1,4 +1,4 @@
-# Playing with numnbers
+# Playing with numbers
 
 ## Blackjack
 Playing with blackjack
