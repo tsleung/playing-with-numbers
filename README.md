@@ -1,7 +1,14 @@
 # Playing with numbers
 
-## Blackjack
+## Getting started
+```python
+python -m SimpleHTTPServer
+```
+
+## Projects
+
+### Blackjack
 Learning to blackjack
 
-## Invest
+### Invest
 Learning to invest
