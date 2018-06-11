@@ -1,7 +1,7 @@
 # Playing with numbers
 
 ## Blackjack
-Playing with blackjack
+Learning to blackjack
 
 ## Invest
-Playing with investing
+Learning to invest
