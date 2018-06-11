@@ -23,19 +23,18 @@ define([], function() {
  */
 function test_network() {
   const inputs = [
-    () => 7, // dealer total
-    () => 5 // player total
+    7, // dealer total
+    5 // player total
   ];
 
   const outputs = [
-    () => {}, // stand
-    () => {} // hit
+    0, // stand
+    1  // hit
   ];
 
   const input_layer = create_layer(inputs.length);
   // const hidden_layers = create_hidden_layers(3, 2);
   const hidden_layers = [
-    create_layer(5),
     create_layer(4),
     create_layer(4)
   ];
@@ -56,20 +55,16 @@ function test_network() {
   );
 
   for (var i = 0; i < network.inputs.length; i++) {
-    network.inputs[i].signal = inputs[i]();
+    network.inputs[i].signal = inputs[i];
   }
 
   let results;
   let error;
-  results = forward(network.outputs);
-  error = train([0,0], network.outputs, results);
-  console.log('results', results);
-  console.log('error', error);
-
-  for (var i = 0; i < 1e5; i++) {
+  const iterations = 1e5;
+  for (var i = 0; i < iterations; i++) {
     results = forward(network.outputs);
-    error = train([0,1], network.outputs, results);
-    if (i % 1e3 == 0) {
+    error = train(outputs, network.outputs, results);
+    if (i % (iterations / 10) == 0) {
       console.log(i);
       console.log('results', results);
       console.log('error', error);
@@ -83,7 +78,7 @@ function test_network() {
 }
 
 /**
- * Train will take a set of output neurons and push each weighted error to it's input
+ * Train will take a set of output neurons and push each weighted error to its input
  */
 function train(expectations, outputs, results) {
   // start with our output neurons
@@ -99,9 +94,16 @@ function train(expectations, outputs, results) {
   }, 0);
 }
 
+/**
+ *
+ * References:
+ * https://machinelearningmastery.com/implement-backpropagation-algorithm-scratch-python/
+ */
 function update_for_error(neuron, error) {
   const learning_rate = .1;
   // work with the input synapses, sum their weights
+  // TODO: Modify biases of this neuron when implemented. Currently only synapses
+
   const weight_sum = neuron.inputs.reduce((sum, synapse) => synapse.weight + sum, 0);
   // modify their weights proportionally to fit better by a determined step size
   neuron.inputs.forEach(synapse => {
