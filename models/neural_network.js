@@ -29,7 +29,7 @@ function test_network() {
 
   const outputs = [
     0, // stand
-    1  // hit
+    1,  // hit
   ];
 
   const input_layer = create_layer(inputs.length);
@@ -60,12 +60,14 @@ function test_network() {
 
   let results;
   let error;
-  const iterations = 1e5;
+  console.log('inputs', inputs);
+  console.log('expected outputs', outputs);
+  const iterations = 1e4;
   for (var i = 0; i < iterations; i++) {
     results = forward(network.outputs);
     error = train(outputs, network.outputs, results);
     if (i % (iterations / 10) == 0) {
-      console.log(i);
+      console.log('training iterations:',i);
       console.log('results', results);
       console.log('error', error);
     }
@@ -85,7 +87,7 @@ function train(expectations, outputs, results) {
   return expectations.map((expectation, index) => {
     // create pairs and calculate error
     const result = results[index];
-    const error = (expectation - result) * (result * (1 - result));
+    const error = (expectation - result);
     const neuron = outputs[index];
 
     return update_for_error(neuron, error);
@@ -100,7 +102,7 @@ function train(expectations, outputs, results) {
  * https://machinelearningmastery.com/implement-backpropagation-algorithm-scratch-python/
  */
 function update_for_error(neuron, error) {
-  const learning_rate = .1;
+  const learning_rate = .05;
   // work with the input synapses, sum their weights
   // TODO: Modify biases of this neuron when implemented. Currently only synapses
 
