@@ -1,19 +1,7 @@
 define([], function() {
   return () => {
-    const reload = () => {
-      const time = 25e3;
-      console.log('reloading in time', time)
-      window.setTimeout(() => window.location.reload(), time);
-
-    }
-
     const network = test_network();
 
-    console.log('creating network',
-      network,
-      //JSON.stringify(network, 0, 4),
-      //reload()
-    );
   };
 });
 

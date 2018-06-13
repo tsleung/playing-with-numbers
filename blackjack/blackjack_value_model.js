@@ -1,4 +1,4 @@
-const strategy = {{
+const strategy = {
     "2": {
         "4": [
             0.4199999999999999,
@@ -919,7 +919,7 @@ const strategy = {{
             6627
         ]
     }
-}};
+};
 define([],() => {
   return strategy;
 });

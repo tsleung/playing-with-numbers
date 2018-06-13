@@ -67,7 +67,7 @@ define(['./player_action_model'],(player_action_model) => {
 
 
       while (!player.bust && !player.stand) { // agent: player turn
-        const action_index = player_action_model.determine_action(dealer.total(), player.total());
+        const action_index = player_action_model.determine_action([dealer.total(), player.total()]);
 
         const action_strategy = [ // this must correspond to player_action_model
           () => {
@@ -117,7 +117,7 @@ define(['./player_action_model'],(player_action_model) => {
 
     const steps = 10; // default 100
     const epochs = 10000; //10000;
-    const step_size = .001; // .01 same as averaging 1 or 0 over 100, 1% change in probability
+    const step_size = .01; // .01 same as averaging 1 or 0 over 100, 1% change in probability
     const step_sizes = [step_size * -1, 0 , step_size]
     let game_results_history = []; // let rather than const since we need to modify window
     for (var i = 0; i < epochs*steps; i++) { // training loop
@@ -128,18 +128,35 @@ define(['./player_action_model'],(player_action_model) => {
       const game_results = playGame();
       game_results_history.unshift(game_results);
       game_results_history = game_results_history.slice(0, epochs); // keep only a window of games so we don't memory bloat
-
       // can apply eligibility trace, geometric decay further back
       game_results.action_history.forEach((item) => { // Monte carlo update
-        const delta = (game_results.result.score == -1) ?
-          step_size * -1 : // decrease on loss
-          game_results.result.score == 1 ? step_size : 0; // increase on win
+        // what features did i see
+        const inputs = [
+          item.dealer_total,
+          item.player_total
+        ];
 
-        player_action_model.strategy_table[item.dealer_total] = (player_action_model.strategy_table[item.dealer_total] || {});
-        player_action_model.strategy_table[item.dealer_total][item.player_total] = player_action_model.strategy_table[item.dealer_total][item.player_total] || [.5,.5, 0];
-        player_action_model.strategy_table[item.dealer_total][item.player_total][item.action_index] = Math.min(1,Math.max(0,player_action_model.strategy_table[item.dealer_total][item.player_total][item.action_index] + (delta)));
-        player_action_model.strategy_table[item.dealer_total][item.player_total][2]++ // record keeping number of iterations
+        // did i hit or stay
+        const outputs = [
+          item.action_index == 0 ? 1 : 0,
+          item.action_index == 1 ? 1 : 0,
+        ];
+
+        if (game_results.result.score == 1) { // train if we win
+          player_action_model.train(step_size, inputs, outputs, [
+            item.action_index == 0 ? 1 : 0,
+            item.action_index == 1 ? 1 : 0,
+          ]);
+        } else { // train if we lose
+          player_action_model.train(step_size, inputs, outputs, [
+            item.action_index == 1 ? 1 : 0,
+            item.action_index == 0 ? 1 : 0,
+          ]);
+        }
+
       });
+
+
     }
 
     const last_games = game_results_history.slice(game_results_history.length * .9, game_results_history.length);
@@ -156,55 +173,7 @@ define(['./player_action_model'],(player_action_model) => {
     console.log('all games',game_results_history.reduce(tally_games, {win:0,loss:0,draw:0}), game_results_history.length);
     console.log('last games', last_games.reduce(tally_games, {win:0,loss:0,draw:0}), last_games.length);
 
-    const strategy_table = player_action_model.strategy_table;
-
-    const table_content = Object.keys(strategy_table).reduce((accum, dealer_total_index) => {
-      const row_content = Object.keys(strategy_table[dealer_total_index]).reduce((accum, player_total_index) => {
-        const state = strategy_table[dealer_total_index][player_total_index];
-        const win_percentage = Math.round((state[0] > state[1] ? state[0] : state[1]) * 10000) / 100;
-
-        const likely_outcome = win_percentage > 66 ? 'win' :
-          win_percentage > 33 ? 'push' : 'lose';
-
-        const outcome_color = {
-          win: '#00bb00',
-          push: '#ffbb00',
-          lose: '#ff0000'
-        }
-
-        const cell = `<td style="padding: .25rem;color:${outcome_color[likely_outcome]};">${win_percentage}%</td>`;
-        return accum + cell;
-      }, '');
-      return accum + `<tr><td>${dealer_total_index}</td>${row_content}</tr>`;
-    }, '');
-
-
-    const value_table_html = `<h1>Value table</h1> <table>
-    <tr>
-      <td></td>
-      <td>4</td>
-      <td>5</td>
-      <td>6</td>
-      <td>7</td>
-      <td>8</td>
-      <td>9</td>
-      <td>10</td>
-      <td>11</td>
-      <td>12</td>
-      <td>13</td>
-      <td>14</td>
-      <td>15</td>
-      <td>16</td>
-      <td>17</td>
-      <td>18</td>
-      <td>19</td>
-      <td>20</td>
-      <td>21</td>
-    </tr>
-    ${table_content}</table>
-    `;
-
-    document.getElementsByTagName('body')[0].innerHTML = value_table_html;
+    document.getElementsByTagName('body')[0].innerHTML = player_action_model.toHTML();
 
     /**
      * Randomize array element order in-place.
@@ -221,8 +190,3 @@ define(['./player_action_model'],(player_action_model) => {
     }
   }
 });
-
-function determine_action(inputs){
-  const action = determine_action(inputs);
-  return action;
-}
