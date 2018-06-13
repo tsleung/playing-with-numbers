@@ -1,5 +1,4 @@
-define(['../models/neural_network'],(neural_network) => {
-  neural_network();
+define([],() => {
   return create_table_model();
 });
 
@@ -8,7 +7,8 @@ function create_table_model() {
     // Value model is guided based on the policy chosen.
     const player_action_model = { // Model free control, combination of the policy and value models
       strategy_table: {}, // saving model from previous runs
-      train: (step_size, inputs, outputs, optimal_outputs) => {
+      train: (step_size, inputs, optimal_outputs) => {
+        const outputs = player_action_model.determine_action(inputs);
         const item = {
           dealer_total: inputs[0],
           player_total: inputs[1],
@@ -95,7 +95,8 @@ function create_table_model() {
           return Math.random() > exploration_decay_rate ? greedy_policy() : random_policy();
         }
 
-        return epsilon_greedy_policy(); // Policy, in order to avoid a local optimum we balance exploration/exploitation
+
+        return (epsilon_greedy_policy() == 0) ? [1,0] : [0,1]; // Policy, in order to avoid a local optimum we balance exploration/exploitation
       }
     };
 

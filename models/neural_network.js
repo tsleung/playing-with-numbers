@@ -1,9 +1,49 @@
 define([], function() {
-  return () => {
-    const network = test_network();
+  return create_blackjack_network;
 
-  };
 });
+
+function create_blackjack_network() {
+  const input_layer = create_layer(2);
+  const output_layer = create_layer(2);
+
+  const hidden_layers = [
+    create_layer(5),
+    create_layer(5),
+    create_layer(5)
+  ];
+
+  const layers = [
+    input_layer,
+    ...hidden_layers,
+    output_layer
+  ];
+
+  const synapses = connect_all_layers(layers);
+  const network = new Network(layers, synapses);
+
+
+  return {
+    network: network,
+    train: (inputs, expected_outputs) => {
+      for (var i = 0; i < network.inputs.length; i++) {
+        network.inputs[i].signal = inputs[i];
+      }
+      const results = forward(network.outputs);
+      train(network.outputs, expected_outputs, results);
+
+      const error = train(network.outputs, expected_outputs, results);
+      return error;
+    },
+    forward: (inputs) => {
+      for (var i = 0; i < network.inputs.length; i++) {
+        network.inputs[i].signal = inputs[i];
+      }
+      const results = forward(network.outputs);
+      return results;
+    }
+  }
+}
 
 /**
  * Testing a simple nn implementation
@@ -23,8 +63,8 @@ function test_network() {
   const input_layer = create_layer(inputs.length);
   // const hidden_layers = create_hidden_layers(3, 2);
   const hidden_layers = [
-    create_layer(4),
-    create_layer(4)
+    create_layer(11),
+    create_layer(11),
   ];
 
   const output_layer = create_layer(outputs.length);
@@ -53,7 +93,7 @@ function test_network() {
   const iterations = 1e4;
   for (var i = 0; i < iterations; i++) {
     results = forward(network.outputs);
-    error = train(outputs, network.outputs, results);
+    error = train(network.outputs, outputs, results);
     if (i % (iterations / 10) == 0) {
       console.log('training iterations:',i);
       console.log('results', results);
@@ -70,7 +110,7 @@ function test_network() {
 /**
  * Train will take a set of output neurons and push each weighted error to its input
  */
-function train(expectations, outputs, results) {
+function train(outputs, expectations,  results) {
   // start with our output neurons
   return expectations.map((expectation, index) => {
     // create pairs and calculate error
@@ -90,7 +130,7 @@ function train(expectations, outputs, results) {
  * https://machinelearningmastery.com/implement-backpropagation-algorithm-scratch-python/
  */
 function update_for_error(neuron, error) {
-  const learning_rate = .05;
+  const learning_rate = .01;
   // work with the input synapses, sum their weights
   // TODO: Modify biases of this neuron when implemented. Currently only synapses
 

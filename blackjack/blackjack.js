@@ -1,4 +1,4 @@
-define(['./player_action_model'],(player_action_model) => {
+define(['./player_action_neural_network'],(player_action_model) => {
   return blackjack;
 
   /**
@@ -67,7 +67,7 @@ define(['./player_action_model'],(player_action_model) => {
 
 
       while (!player.bust && !player.stand) { // agent: player turn
-        const action_index = player_action_model.determine_action([dealer.total(), player.total()]);
+        const action_index = player_action_model.determine_action([dealer.total(), player.total()]).findIndex(index => index == 1);
 
         const action_strategy = [ // this must correspond to player_action_model
           () => {
@@ -115,7 +115,7 @@ define(['./player_action_model'],(player_action_model) => {
       };
     }
 
-    const steps = 10; // default 100
+    const steps = 50; // default 100
     const epochs = 10000; //10000;
     const step_size = .01; // .01 same as averaging 1 or 0 over 100, 1% change in probability
     const step_sizes = [step_size * -1, 0 , step_size]
@@ -142,21 +142,13 @@ define(['./player_action_model'],(player_action_model) => {
           item.action_index == 1 ? 1 : 0,
         ];
 
-        if (game_results.result.score == 1) { // train if we win
-          player_action_model.train(step_size, inputs, outputs, [
-            item.action_index == 0 ? 1 : 0,
-            item.action_index == 1 ? 1 : 0,
-          ]);
-        } else { // train if we lose
-          player_action_model.train(step_size, inputs, outputs, [
-            item.action_index == 1 ? 1 : 0,
-            item.action_index == 0 ? 1 : 0,
-          ]);
-        }
+        const train = (game_results.result.score == 1) ?
+          () => player_action_model.train(step_size, inputs, [item.action_index == 0 ? 1 : 0, item.action_index == 1 ? 1 : 0]) :
+          () => player_action_model.train(step_size, inputs, [item.action_index == 1 ? 1 : 0, item.action_index == 0 ? 1 : 0]);
+
+        train();
 
       });
-
-
     }
 
     const last_games = game_results_history.slice(game_results_history.length * .9, game_results_history.length);
@@ -169,8 +161,12 @@ define(['./player_action_model'],(player_action_model) => {
       };
     };
 
-    console.log('strategy_table', JSON.stringify(player_action_model.strategy_table,0,4));
-    console.log('all games',game_results_history.reduce(tally_games, {win:0,loss:0,draw:0}), game_results_history.length);
+
+    console.log('player_action_model.model',
+      player_action_model.model,
+      JSON.stringify(player_action_model.model, 0, 4),
+    );
+    console.log('all games',game_results_history.reduce(tally_games, {win:0,loss:0,draw:0}), game_results_history.length,game_results_history);
     console.log('last games', last_games.reduce(tally_games, {win:0,loss:0,draw:0}), last_games.length);
 
     document.getElementsByTagName('body')[0].innerHTML = player_action_model.toHTML();
