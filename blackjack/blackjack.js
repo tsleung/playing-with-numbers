@@ -115,7 +115,7 @@ define(['./player_action_neural_network'],(player_action_model) => {
       };
     }
 
-    const steps = 50; // default 100
+    const steps = 10; // default 100
     const epochs = 10000; //10000;
     const step_size = .01; // .01 same as averaging 1 or 0 over 100, 1% change in probability
     const step_sizes = [step_size * -1, 0 , step_size]
@@ -170,6 +170,21 @@ define(['./player_action_neural_network'],(player_action_model) => {
     console.log('last games', last_games.reduce(tally_games, {win:0,loss:0,draw:0}), last_games.length);
 
     document.getElementsByTagName('body')[0].innerHTML = player_action_model.toHTML();
+    // build a value table
+    const entries = [];
+    for(var i = 2; i < 11; i ++){ // iterate for dealer hands
+      for(var j = 2; j < 21; j ++){ // iterate for player hands
+        const inputs = [i,j];
+        const outputs = player_action_model.determine_action(inputs);
+
+        const entry = {
+          inputs, outputs
+        }
+
+        entries.push(entry);
+      }
+    }
+    console.log('entries', entries)
 
     /**
      * Randomize array element order in-place.

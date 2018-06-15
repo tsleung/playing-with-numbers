@@ -2,11 +2,15 @@ define(['../models/neural_network','./blackjack_nn_model'],(neural_network, save
   // create network
   const network_model = neural_network();
   // load synapses
-  for (var i = 0; i < network_model.network.synapses.length; i ++) {
-    if (saved_model.synapses.length > i) {
-      network_model.network.synapses.weight = saved_model.synapses[i].weight;
+  const load = () => {
+    for (var i = 0; i < network_model.network.synapses.length; i ++) {
+      if (saved_model.synapses.length > i) {
+        network_model.network.synapses.weight = saved_model.synapses[i].weight;
+      }
     }
   }
+  load();
+
 
   let iterations = [];
   const player_action_model = {
@@ -33,7 +37,7 @@ define(['../models/neural_network','./blackjack_nn_model'],(neural_network, save
       }
 
       const epsilon_greedy_policy = () => { // exploration + exploitation tradeoff
-        const exploration_decay_rate = 1 / action_value_model[2]; // improve with confidence interval
+        const exploration_decay_rate = .01; // improve with confidence interval
         return Math.random() > exploration_decay_rate ? greedy_policy() : random_policy();
       }
 

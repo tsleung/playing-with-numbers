@@ -4,13 +4,14 @@ define([], function() {
 });
 
 function create_blackjack_network() {
-  const input_layer = create_layer(2);
-  const output_layer = create_layer(2);
+  const input_layer = create_layer(2,relu);
+  const output_layer = create_layer(2,relu);
 
   const hidden_layers = [
-    create_layer(5),
-    create_layer(5),
-    create_layer(5)
+    create_layer(20,relu),
+    create_layer(20,relu)
+    // create_layer(11),
+    // create_layer(21)
   ];
 
   const layers = [
