@@ -8,16 +8,20 @@
 <body>
 <script type="text/javascript">
     require.config({
-    shim : {
-        'jquery.serializeJSON' : {
-    	      deps : ['jquery'],
-            exports : 'jQuery.fn.serializeJSON'
-        }
-    },
-    paths: {
-        'jquery.serializeJSON':'https://cdnjs.cloudflare.com/ajax/libs/jquery.serializeJSON/2.6.1/jquery.serializejson',
-        'jquery' : 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery'
-    }
+      shim : {
+          'jquery.serializeJSON' : {
+      	      deps : ['jquery'],
+              exports : 'jQuery.fn.serializeJSON'
+          },
+          'tf' : {
+              exports : 'tf'
+          }
+      },
+      paths: {
+          'tf': 'https://cdnjs.cloudflare.com/ajax/libs/tensorflow/0.11.6/tf',
+          'jquery.serializeJSON':'https://cdnjs.cloudflare.com/ajax/libs/jquery.serializeJSON/2.6.1/jquery.serializejson',
+          'jquery' : 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery'
+      }
   });
 </script>
 <script>

@@ -5,11 +5,11 @@ define([], function() {
 
 function create_blackjack_network() {
   const input_layer = create_layer(2,relu);
-  const output_layer = create_layer(2,relu);
+  const output_layer = create_layer(2,sigmoid);
 
   const hidden_layers = [
-    create_layer(20,relu),
-    create_layer(20,relu)
+    create_layer(2),
+    // create_layer(20, relu),
     // create_layer(11),
     // create_layer(21)
   ];
@@ -31,8 +31,6 @@ function create_blackjack_network() {
         network.inputs[i].signal = inputs[i];
       }
       const results = forward(network.outputs);
-      train(network.outputs, expected_outputs, results);
-
       const error = train(network.outputs, expected_outputs, results);
       return error;
     },
@@ -44,68 +42,6 @@ function create_blackjack_network() {
       return results;
     }
   }
-}
-
-/**
- * Testing a simple nn implementation
- * Concepts from: http://ml-cheatsheet.readthedocs.io/en/latest/nn_concepts.html
- */
-function test_network() {
-  const inputs = [
-    7, // dealer total
-    5 // player total
-  ];
-
-  const outputs = [
-    0, // stand
-    1,  // hit
-  ];
-
-  const input_layer = create_layer(inputs.length);
-  // const hidden_layers = create_hidden_layers(3, 2);
-  const hidden_layers = [
-    create_layer(11),
-    create_layer(11),
-  ];
-
-  const output_layer = create_layer(outputs.length);
-
-  const layers = [
-    input_layer,
-    ...hidden_layers,
-    output_layer
-  ];
-
-  const synapses = connect_all_layers(layers);
-  const network = new Network(layers, synapses);
-  console.log('creating network',
-    network,
-    JSON.stringify(network, 0, 4),
-  );
-
-  for (var i = 0; i < network.inputs.length; i++) {
-    network.inputs[i].signal = inputs[i];
-  }
-
-  let results;
-  let error;
-  console.log('inputs', inputs);
-  console.log('expected outputs', outputs);
-  const iterations = 1e4;
-  for (var i = 0; i < iterations; i++) {
-    results = forward(network.outputs);
-    error = train(network.outputs, outputs, results);
-    if (i % (iterations / 10) == 0) {
-      console.log('training iterations:',i);
-      console.log('results', results);
-      console.log('error', error);
-    }
-  }
-
-  console.log('results', results);
-  console.log('error', error);
-
-  return network;
 }
 
 /**
@@ -264,4 +200,67 @@ class Neuron {
       outputs: this.outputs.map(output => output.id)
     });
   }
+}
+
+
+/**
+ * Testing a simple nn implementation
+ * Concepts from: http://ml-cheatsheet.readthedocs.io/en/latest/nn_concepts.html
+ */
+function test_network() {
+  const inputs = [
+    7, // dealer total
+    5 // player total
+  ];
+
+  const outputs = [
+    0, // stand
+    1,  // hit
+  ];
+
+  const input_layer = create_layer(inputs.length);
+  // const hidden_layers = create_hidden_layers(3, 2);
+  const hidden_layers = [
+    create_layer(11),
+    create_layer(11),
+  ];
+
+  const output_layer = create_layer(outputs.length);
+
+  const layers = [
+    input_layer,
+    ...hidden_layers,
+    output_layer
+  ];
+
+  const synapses = connect_all_layers(layers);
+  const network = new Network(layers, synapses);
+  console.log('creating network',
+    network,
+    JSON.stringify(network, 0, 4),
+  );
+
+  for (var i = 0; i < network.inputs.length; i++) {
+    network.inputs[i].signal = inputs[i];
+  }
+
+  let results;
+  let error;
+  console.log('inputs', inputs);
+  console.log('expected outputs', outputs);
+  const iterations = 1e4;
+  for (var i = 0; i < iterations; i++) {
+    results = forward(network.outputs);
+    error = train(network.outputs, outputs, results);
+    if (i % (iterations / 10) == 0) {
+      console.log('training iterations:',i);
+      console.log('results', results);
+      console.log('error', error);
+    }
+  }
+
+  console.log('results', results);
+  console.log('error', error);
+
+  return network;
 }

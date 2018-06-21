@@ -9,7 +9,7 @@ define(['../models/neural_network','./blackjack_nn_model'],(neural_network, save
       }
     }
   }
-  load();
+  //load();
 
 
   let iterations = [];
@@ -17,10 +17,13 @@ define(['../models/neural_network','./blackjack_nn_model'],(neural_network, save
     model: network_model,
     train: (step_size, features, optimal_outputs) => {
       const error = network_model.train(features, optimal_outputs);
-      if(Math.random() < .001) {
+      if(Math.random() < .01) {
         iterations.unshift(error);
         iterations = iterations.slice(0,1000);
       }
+    },
+    forward: (features) => {
+      return network_model.forward(features);
     },
     determine_action: (features) => {
       const action_value_model =  network_model.forward(features);
@@ -33,6 +36,7 @@ define(['../models/neural_network','./blackjack_nn_model'],(neural_network, save
       }
 
       const greedy_policy = () => { // exploitation
+        // console.log('greedy policy', hit_strategy, stand_strategy, hit_strategy > stand_strategy ? 1 : 0)
         return hit_strategy > stand_strategy ? 1 : 0;
       }
 
@@ -48,7 +52,7 @@ define(['../models/neural_network','./blackjack_nn_model'],(neural_network, save
       const bars = iterations.reduce((accum, val) => {
         return accum + `<div style="width:${val*100}%;height:.125rem;border:1px solid #fa2;margin: 1px;background: blue;"></div>`
       });
-      return `<div style="width:800px;background:grey;position:relative;">${bars}</div>`
+      return `<div style="width:400px;background:#ddd;position:relative;">${bars}</div>`
       //return `<pre>${JSON.stringify(iterations, 0, 4)}</pre>`;
     }
   };

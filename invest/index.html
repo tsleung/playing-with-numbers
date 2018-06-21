@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Prototype Boilerplate</title>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/less.js/2.5.3/less.js"></script>
+  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.15/require.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+    require.config({
+    shim : {
+        'jquery.serializeJSON' : {
+    	      deps : ['jquery'],
+            exports : 'jQuery.fn.serializeJSON'
+        },
+        'tf' : {
+            exports : 'tf'
+        }
+    },
+    paths: {
+        'tf': 'https://cdnjs.cloudflare.com/ajax/libs/tensorflow/0.11.6/tf',
+        'jquery.serializeJSON':'https://cdnjs.cloudflare.com/ajax/libs/jquery.serializeJSON/2.6.1/jquery.serializejson',
+        'jquery' : 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery'
+    }
+  });
+</script>
+<script>
+  require(['./app'], (index) => index());
+</script>
+</body>
+</html>
