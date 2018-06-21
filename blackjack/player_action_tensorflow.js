@@ -7,9 +7,8 @@ define(['tf'],(tf) => {
   model.add(tf.layers.dense({units:2, activation: 'sigmoid'}));
   model.compile({optimizer: 'sgd', loss: 'binaryCrossentropy', lr:0.1});
 
-  let historical_inputs = [];
-  let historical_outputs = [];
-  let counter = 0;
+  const historical_inputs = [];
+  const historical_outputs = [];
 
   const player_action_model = {
     bulk_train: () => {
@@ -20,16 +19,15 @@ define(['tf'],(tf) => {
         epochs: 10
       });
     },
-    train: (step_size, features, optimal_outputs) => {
+    train: (features, optimal_outputs) => {
       // Train the model using the data.
 
       // console.log('train', features, optimal_outputs)
 
       historical_inputs.unshift(features);
       historical_outputs.unshift(optimal_outputs);
-      historical_inputs = historical_inputs.slice(0,10000);
-      historical_outputs = historical_outputs.slice(0,10000);
-      counter++;
+      // historical_inputs = historical_inputs.slice(0,10000);
+      // historical_outputs = historical_outputs.slice(0,10000);
       // online learning, batching writes https://www.youtube.com/watch?v=fevMOp5TDQs
       // need to pause between training sessions
       // player_action_model.bulk_train();

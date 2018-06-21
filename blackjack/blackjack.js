@@ -115,10 +115,9 @@ define(['./player_action_tensorflow'],(player_action_model) => {
       };
     }
 
-    const steps = 1; // default 100
+    const steps = 2; // default 100
     const epochs = 10000; //10000;
-    const step_size = .01; // .01 same as averaging 1 or 0 over 100, 1% change in probability
-    const step_sizes = [step_size * -1, 0 , step_size]
+
     let game_results_history = []; // let rather than const since we need to modify window
     for (var i = 0; i < epochs*steps; i++) { // training loop
       if(i% (epochs / 10) == 0) {
@@ -143,9 +142,9 @@ define(['./player_action_tensorflow'],(player_action_model) => {
         ];
 
         const train = (game_results.result.score == 1) ?
-          () => player_action_model.train(step_size, inputs, [item.action_index == 0 ? 1 : 0, item.action_index == 1 ? 1 : 0]) :
+          () => player_action_model.train( inputs, [item.action_index == 0 ? 1 : 0, item.action_index == 1 ? 1 : 0]) :
           // () => {};
-          () => player_action_model.train(step_size, inputs, [item.action_index == 0 ? 0 : 1, item.action_index == 1 ? 0 : 1]);
+          () => player_action_model.train( inputs, [item.action_index == 0 ? 0 : 1, item.action_index == 1 ? 0 : 1]);
 
         train();
 
