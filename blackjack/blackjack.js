@@ -115,7 +115,7 @@ define(['./player_action_tensorflow'],(player_action_model) => {
       };
     }
 
-    const steps = 2; // default 100
+    const steps = 1; // default 100
     const epochs = 10000; //10000;
 
     let game_results_history = []; // let rather than const since we need to modify window

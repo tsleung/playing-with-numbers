@@ -26,6 +26,12 @@ define(['tf'],(tf) => {
 
       historical_inputs.unshift(features);
       historical_outputs.unshift(optimal_outputs);
+      while (historical_inputs.length > 10000) { // tfjs crash limit
+        historical_inputs.pop();
+      }
+      while (historical_outputs.length > 10000) { // tfjs crash limit
+        historical_outputs.pop();
+      }
       // historical_inputs = historical_inputs.slice(0,10000);
       // historical_outputs = historical_outputs.slice(0,10000);
       // online learning, batching writes https://www.youtube.com/watch?v=fevMOp5TDQs
