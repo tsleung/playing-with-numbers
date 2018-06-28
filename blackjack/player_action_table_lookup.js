@@ -7,7 +7,8 @@ function create_table_model() {
     // Value model is guided based on the policy chosen.
     const player_action_model = { // Model free control, combination of the policy and value models
       strategy_table: {}, // saving model from previous runs
-      train: (step_size, inputs, optimal_outputs) => {
+      train: (inputs, optimal_outputs) => {
+        const step_size = .01;
         const outputs = player_action_model.determine_action(inputs);
         const item = {
           dealer_total: inputs[0],

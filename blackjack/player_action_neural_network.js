@@ -15,7 +15,7 @@ define(['../models/neural_network','./blackjack_nn_model'],(neural_network, save
   let iterations = [];
   const player_action_model = {
     model: network_model,
-    train: (step_size, features, optimal_outputs) => {
+    train: (features, optimal_outputs) => {
       const error = network_model.train(features, optimal_outputs);
       if(Math.random() < .01) {
         iterations.unshift(error);

@@ -116,11 +116,10 @@ define(['./player_action_tensorflow'],(player_action_model) => {
     }
 
     const steps = 1; // default 100
-    const epochs = 10000; //10000;
-
+    const epochs = 2000; //10000;
     let game_results_history = []; // let rather than const since we need to modify window
     for (var i = 0; i < epochs*steps; i++) { // training loop
-      if(i% (epochs / 10) == 0) {
+      if(i%10000 == 0) {
         console.log('thinking...');
         // console.log('game_results', JSON.stringify(game_results,0,4));
       }
@@ -142,9 +141,8 @@ define(['./player_action_tensorflow'],(player_action_model) => {
         ];
 
         const train = (game_results.result.score == 1) ?
-          () => player_action_model.train( inputs, [item.action_index == 0 ? 1 : 0, item.action_index == 1 ? 1 : 0]) :
-          // () => {};
-          () => player_action_model.train( inputs, [item.action_index == 0 ? 0 : 1, item.action_index == 1 ? 0 : 1]);
+          () => player_action_model.train(inputs, [item.action_index == 0 ? 1 : 0, item.action_index == 1 ? 1 : 0]) :
+          () => player_action_model.train(inputs, [item.action_index == 1 ? 1 : 0, item.action_index == 0 ? 1 : 0]);
 
         train();
 
@@ -162,42 +160,35 @@ define(['./player_action_tensorflow'],(player_action_model) => {
     };
 
 
-    player_action_model.bulk_train().then(() => {
-      console.log('then')
-      print_output();
-    })
-    function print_output() {
+    console.log('player_action_model.model',
+      player_action_model.model,
+      JSON.stringify(player_action_model.model, 0, 4),
+    );
+    console.log('all games',game_results_history.reduce(tally_games, {win:0,loss:0,draw:0}), game_results_history.length,game_results_history);
+    console.log('last games', last_games.reduce(tally_games, {win:0,loss:0,draw:0}), last_games.length);
 
-      //console.log('all games',game_results_history.reduce(tally_games, {win:0,loss:0,draw:0}), game_results_history.length,game_results_history);
-      // console.log('last games', last_games.reduce(tally_games, {win:0,loss:0,draw:0}), last_games.length);
+    // build a value table
+    const value_table = {};
+    let output = '';
+    for(var i = 2; i <= 11; i ++){ // iterate for dealer hands
+      for(var j = 2; j <= 21; j ++){ // iterate for player hands
 
+        const inputs = [i,j];
+        const outputs = player_action_model.forward(inputs);
 
-      // build a value table
-      const value_table = {};
-      let output = '';
-      for(var i = 2; i <= 11; i ++){ // iterate for dealer hands
-        for(var j = 2; j <= 21; j ++){ // iterate for player hands
+        ((value_table, i, j, outputs) => {
+          value_table[i] = value_table[i] || {};
 
-          const inputs = [i,j];
-          const outputs = player_action_model.forward(inputs);
-
-          ((value_table, i, j, outputs) => {
-            value_table[i] = value_table[i] || {};
-            outputs.as1D().data().then((result) => {
-              const action = result[0] > result[1] ? 'stand' : 'hit';
-              console.log('value ready', action, inputs, result);
-              value_table[i][j] = result;
-            })
-
-          })(value_table, i, j, outputs);
+          const action = outputs[0] > outputs[1] ? 'stand' : 'hit';
+          console.log('value ready', action, inputs, outputs);
+          value_table[i][j] = outputs;
 
 
-        }
-
+        })(value_table, i, j, outputs);
       }
-
-
     }
+    console.log('value table', value_table);
+
     /**
      * Randomize array element order in-place.
      * Using Durstenfeld shuffle algorithm.
