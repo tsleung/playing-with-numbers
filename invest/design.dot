@@ -1,11 +1,8 @@
 digraph G {
-  environment->securities
-  securities->synthetic_securities
-  synthetic_securities->securities
-  securities->laplace_rule
-  laplace_rule->neural_network
-
-  neural_network->security_bet
-  security_bet->environment
-
+  agent->actions
+  environment->observations
+  observations->agent
+  environment->reward
+  actions->environment
+  reward->agent
 }
