@@ -2,50 +2,50 @@ define(['tf','rh','utils/pct_change','jquery'], (tf, rh,pct_change,$) => {
 
   return async () => {
     console.log('ranker')
-    const model = create_model();
+    const model = await tf.loadModel('localstorage://my-model-1');
+    // const model = create_model();
+    model.compile({loss: 'meanSquaredError', optimizer: 'adam'});
     // create pair
-    // const universe = await create_close_universe_fs(['SPY','XLK','XLV','XLF','XLP','XLY','XLE','XLU','XLP']);
-    const universe = await create_close_universe_fs(['XLF','XLE']);
+    //const universe = await create_close_universe_rh(['GOOG','AAPL','MSFT','IBM','ORCL','NFLX','AMZN','ADBE','FB']);
+    const universe = await create_close_universe_fs(['SPY','XLK','XLV','XLF','XLP','XLY','XLE','XLU','XLP']);
+
+    // const universe = await create_close_universe_fs(['XLF','XLE']);
     console.log('universe', universe);
     // train
-    const training_data = create_training_data(universe);
-    console.log('created training data', training_data);
+    // let training_data = create_competitive_matrix(universe, 100,190,.5);
+    let training_data = create_competitive_matrix(universe, 1000,4000,.02);
+    console.log('created training data', new Date(), training_data);
     await train(model, training_data.inputs, training_data.outputs);
-    console.log('training complete', model)
+    console.log('training complete', new Date(), model)
+    const saveResults = await model.save('localstorage://my-model-1');
+
     // validation
-    const validation_data = create_validation_data(universe);
-    const results = await validate(model, validation_data.inputs, validation_data.outputs);
-    console.log('results', results, results.filter(x => x === 1))
+    // let validation_data = create_competitive_matrix(universe,0,100,.05);
+    let validation_data = create_competitive_matrix(universe,0,1000,.01);
+    let results = await validate(model, validation_data.inputs, validation_data.outputs);
+    let successful_results = results.filter(arr => {
+      return (arr[0] > .5 ? 1 : 0) == arr[1];
+    });
+    console.log('results', successful_results.length / results.length, results, successful_results);
+
+
 
     window.api = {
-      model, universe, train, validate
+      model, universe, train, validate, create_competitive_matrix
     };
-
   };
 
   async function validate(model, inputs, outputs) {
     const results = [];
     for(var i = 0; i < inputs.length; i++) {
       const result = await predict(model, inputs[i]);
-      const correct = (result > .5 ? 1 : 0) == outputs[i];
-      results.push(correct ? 1 : 0);
+      console.log('result', result)
+      results.push([result, outputs[i]]);
     }
     return results;
   }
 
-  function create_validation_data(universe, start, end) {
-    start = start || 0;
-    end = end || 100;
-    return create_competitive_matrix(universe, start, end);
-  }
-
-  function create_training_data(universe, start, end) {
-    start = start || 0;
-    end = end || 100;
-    return create_competitive_matrix(universe, start, end);
-  }
-
-  function create_competitive_matrix(universe, start, end) {
+  function create_competitive_matrix(universe, start, end, sample) {
     const inputs = [];
     const outputs = [];
 
@@ -55,6 +55,7 @@ define(['tf','rh','utils/pct_change','jquery'], (tf, rh,pct_change,$) => {
         // don't do the same to itself
         if(first !== second) {
           for( var i = start; i < end; i++) {
+            if (Math.random() > sample) {continue;}
             const pair = create_pair(universe[first], universe[second], i)
             inputs.push(pair.inputs);
             outputs.push(pair.outputs);
@@ -79,17 +80,16 @@ define(['tf','rh','utils/pct_change','jquery'], (tf, rh,pct_change,$) => {
   }
 
   function features(history, index) {
-    return [2,3,5,8,13,21].map(fib => {
+    return [1,2,3,5,8,13,21,33,54].map(fib => {
       return pct_change(history[index], history[index+fib]);
     });
   }
 
   function create_model() {
     const model = tf.sequential();
-    model.add(tf.layers.dense({units:12, inputShape:12, activation: 'relu'}));
-    model.add(tf.layers.dense({units:6, activation: 'relu'}));
-    model.add(tf.layers.dense({units:1, activation: 'sigmoid'}));
-    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    model.add(tf.layers.dense({units:18, inputShape:18, activation: 'relu'}));
+    model.add(tf.layers.dense({units:18, activation: 'relu'}));
+    model.add(tf.layers.dense({units:1, activation: 'relu'}));
     return model;
   }
 
