@@ -6,32 +6,34 @@ define(['tf','rh','utils/pct_change','jquery'], (tf, rh,pct_change,$) => {
     // const model = create_model();
     model.compile({loss: 'meanSquaredError', optimizer: 'adam'});
     // create pair
-    //const universe = await create_close_universe_rh(['GOOG','AAPL','MSFT','IBM','ORCL','NFLX','AMZN','ADBE','FB']);
-    const universe = await create_close_universe_fs(['SPY','XLK','XLV','XLF','XLP','XLY','XLE','XLU','XLP']);
+    const tech = ["AAPL", "MSFT", "FB", "GOOG", "GOOGL", "V", "T", "INTC", "VZ", "CSCO", "MA", "NVDA", "ORCL", "IBM", "ADBE", "TXN", "ACN", "CRM", "QCOM", "PYPL", "AVGO", "MU", "ADP", "ATVI", "INTU", "AMAT", "CTSH", "EA", "HPQ", "ADI", "FIS", "TEL", "LRCX", "EBAY", "FISV", "ADSK", "APH", "GLW", "RHT", "DXC", "HPE", "PAYX", "MCHP", "NTAP", "WDC", "TWTR", "MSI", "FLT", "CTL", "KLAC", "XLNX", "GPN", "SWKS", "STX", "TSS", "AMD", "CTXS", "ANSS", "CA", "VRSN", "AKAM", "SNPS", "TTWO", "BR", "SYMC", "IT", "CDNS", "ADS", "FFIV", "QRVO", "JNPR", "WU", "FLIR", "IPGP", "XRX"];
 
+    // const universe = await create_close_universe_rh([...tech]);
+    // const universe = await create_close_universe_rh(['SPY','XLK','XLV','XLF','XLP','XLY','XLE','XLU','XLP']);
+    const universe = await create_close_universe_fs(['SPY','XLK','XLV','XLF','XLP','XLY','XLE','XLU','XLP']);
     // const universe = await create_close_universe_fs(['XLF','XLE']);
     console.log('universe', universe);
     // train
-    // let training_data = create_competitive_matrix(universe, 100,190,.5);
-    let training_data = create_competitive_matrix(universe, 1000,4000,.02);
+    // let training_data = create_competitive_matrix(universe, 50,210,.25);
+    let training_data = create_competitive_matrix(universe, 1000,4000,.05);
     console.log('created training data', new Date(), training_data);
     await train(model, training_data.inputs, training_data.outputs);
     console.log('training complete', new Date(), model)
     const saveResults = await model.save('localstorage://my-model-1');
 
     // validation
-    // let validation_data = create_competitive_matrix(universe,0,100,.05);
-    let validation_data = create_competitive_matrix(universe,0,1000,.01);
+    // let validation_data = create_competitive_matrix(universe,0,50,.25);
+    let validation_data = create_competitive_matrix(universe,0,1000,.05);
     let results = await validate(model, validation_data.inputs, validation_data.outputs);
+
     let successful_results = results.filter(arr => {
-      return (arr[0] > .5 ? 1 : 0) == arr[1];
+      return (arr[0] > 0 ? 1 : 0) == (arr[1] > 0 ? 1 : 0);
     });
-    console.log('results', successful_results.length / results.length, results, successful_results);
 
-
+    console.log(new Date(), 'results', successful_results.length / results.length, results, successful_results);
 
     window.api = {
-      model, universe, train, validate, create_competitive_matrix
+      model, universe, train, validate, create_competitive_matrix, results
     };
   };
 
@@ -39,7 +41,7 @@ define(['tf','rh','utils/pct_change','jquery'], (tf, rh,pct_change,$) => {
     const results = [];
     for(var i = 0; i < inputs.length; i++) {
       const result = await predict(model, inputs[i]);
-      console.log('result', result)
+      // console.log('result', result)
       results.push([result, outputs[i]]);
     }
     return results;
@@ -73,30 +75,32 @@ define(['tf','rh','utils/pct_change','jquery'], (tf, rh,pct_change,$) => {
     const first_features = features(first, i+1);
     const second_features = features(second, i+1);
 
-    const outputs = (first_output > second_output) ? [0] : [1];
+    // const outputs = (first_output > second_output) ? [0] : [1];
+    const outputs = [second_output - first_output];
     const inputs = [...first_features, ...second_features];
 
     return {inputs, outputs};
   }
 
   function features(history, index) {
-    return [1,2,3,5,8,13,21,33,54].map(fib => {
+    return [1,2,3,5,8,13,21,33].map(fib => {
       return pct_change(history[index], history[index+fib]);
     });
   }
 
   function create_model() {
     const model = tf.sequential();
-    model.add(tf.layers.dense({units:18, inputShape:18, activation: 'relu'}));
-    model.add(tf.layers.dense({units:18, activation: 'relu'}));
-    model.add(tf.layers.dense({units:1, activation: 'relu'}));
+    model.add(tf.layers.dense({units:16, inputShape:16, activation: 'relu'}));
+    model.add(tf.layers.dense({units:16, activation: 'relu'}));
+    model.add(tf.layers.dense({units:16, activation: 'relu'}));
+    model.add(tf.layers.dense({units:1, activation: 'linear'}));
     return model;
   }
 
   async function train(model, inputs, outputs) {
     return await model.fit(tf.tensor2d(inputs), tf.tensor2d(outputs), {
       batchSize: 8,
-      epochs: 10,
+      epochs: 4,
     });
   }
 
