@@ -6,16 +6,18 @@ define(['tf','rh','utils/pct_change','jquery'], (tf, rh,pct_change,$) => {
     // const model = create_model();
     model.compile({loss: 'meanSquaredError', optimizer: 'adam'});
     // create pair
-    const tech = ["AAPL", "MSFT", "FB", "GOOG", "GOOGL", "V", "T", "INTC", "VZ", "CSCO", "MA", "NVDA", "ORCL", "IBM", "ADBE", "TXN", "ACN", "CRM", "QCOM", "PYPL", "AVGO", "MU", "ADP", "ATVI", "INTU", "AMAT", "CTSH", "EA", "HPQ", "ADI", "FIS", "TEL", "LRCX", "EBAY", "FISV", "ADSK", "APH", "GLW", "RHT", "DXC", "HPE", "PAYX", "MCHP", "NTAP", "WDC", "TWTR", "MSI", "FLT", "CTL", "KLAC", "XLNX", "GPN", "SWKS", "STX", "TSS", "AMD", "CTXS", "ANSS", "CA", "VRSN", "AKAM", "SNPS", "TTWO", "BR", "SYMC", "IT", "CDNS", "ADS", "FFIV", "QRVO", "JNPR", "WU", "FLIR", "IPGP", "XRX"];
+    const tech = ["AAPL", "MSFT", "FB", "GOOG", "V", "T", "INTC", "VZ", "CSCO", "MA", "NVDA", "ORCL", "IBM", "ADBE", "TXN", "ACN", "CRM", "QCOM", "PYPL", "AVGO", "MU", "ADP", "ATVI", "INTU", "AMAT", "CTSH", "EA", "HPQ", "ADI", "FIS", "TEL", "LRCX", "EBAY", "FISV", "ADSK", "APH", "GLW", "RHT", "DXC", "HPE", "PAYX", "MCHP", "NTAP", "WDC", "TWTR", "MSI", "FLT", "CTL", "KLAC", "XLNX", "GPN", "SWKS", "STX", "TSS", "AMD", "CTXS", "ANSS", "CA", "VRSN", "AKAM", "SNPS", "TTWO", "BR", "SYMC", "IT", "CDNS", "ADS", "FFIV", "QRVO", "JNPR", "WU", "FLIR", "IPGP", "XRX"];
 
-    // const universe = await create_close_universe_rh([...tech]);
+    const benchmark = await create_close_universe_rh(['XLK']);
+    const universe = await create_close_universe_rh([...tech]);
     // const universe = await create_close_universe_rh(['SPY','XLK','XLV','XLF','XLP','XLY','XLE','XLU','XLP']);
-    const universe = await create_close_universe_fs(['SPY','XLK','XLV','XLF','XLP','XLY','XLE','XLU','XLP']);
+    // const universe = await create_close_universe_fs(['SPY','XLK','XLV','XLF','XLP','XLY','XLE','XLU','XLP']);
     // const universe = await create_close_universe_fs(['XLF','XLE']);
     console.log('universe', universe);
     // train
-    // let training_data = create_competitive_matrix(universe, 50,210,.25);
-    let training_data = create_competitive_matrix(universe, 1000,4000,.05);
+    // let training_data = create_competitive_matrix(universe, 50,210,.005);
+    let training_data = create_competitive_benchmark(benchmark, universe, 50,210,.05);
+    // let training_data = create_competitive_matrix(universe, 1000,4000,.05);
     console.log('created training data', new Date(), training_data);
     await train(model, training_data.inputs, training_data.outputs);
     console.log('training complete', new Date(), model)
@@ -23,7 +25,8 @@ define(['tf','rh','utils/pct_change','jquery'], (tf, rh,pct_change,$) => {
 
     // validation
     // let validation_data = create_competitive_matrix(universe,0,50,.25);
-    let validation_data = create_competitive_matrix(universe,0,1000,.05);
+    let validation_data = create_competitive_benchmark(benchmark, universe,0,50,.5);
+    // let validation_data = create_competitive_matrix(universe,0,1000,.005);
     let results = await validate(model, validation_data.inputs, validation_data.outputs);
 
     let successful_results = results.filter(arr => {
@@ -45,6 +48,29 @@ define(['tf','rh','utils/pct_change','jquery'], (tf, rh,pct_change,$) => {
       results.push([result, outputs[i]]);
     }
     return results;
+  }
+
+
+  function create_competitive_benchmark(benchmark, universe, start, end, sample) {
+    const inputs = [];
+    const outputs = [];
+
+    // create competitive matrix
+    for (var first in benchmark) {
+      for (var second in universe) {
+        // don't do the same to itself
+        if(first !== second) {
+          for( var i = start; i < end; i++) {
+            if (Math.random() > sample) {continue;}
+            const pair = create_pair(benchmark[first], universe[second], i)
+            inputs.push(pair.inputs);
+            outputs.push(pair.outputs);
+          }
+        }
+      }
+    }
+
+    return {inputs, outputs};
   }
 
   function create_competitive_matrix(universe, start, end, sample) {
