@@ -11,6 +11,7 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
     const benchmark = await create_close_universe_fs(['SPY']);
 
     // discovery of weekly
+    // const weekly_summary_spy = universe_to_pct_change(benchmark,4)['SPY'].slice(0,250*20);
     const weekly_summary_spy = universe_to_pct_change(benchmark,5)['SPY'].slice(0,250*20);
     console.log('weekly_summary_spy', weekly_summary_spy)
     function option_profit(current, expected_pct_change, option_strike, option_price) {
@@ -19,38 +20,46 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
 
     // simple random sample test
 
-    function generate_sample_backtest() {
+    function generate_sample_backtest(default_option_type, default_bet_size) {
       const index_pool = weekly_summary_spy.length;
-      const calculated_returns = new Array(2 * 50)
+      const calculated_returns = new Array(1 * 50)
         .fill(index_pool)
         .map((index_pool, i) => {
           const sample_index = Math.round(Math.random() * index_pool);
           // console.log('sample_index',sample_index)
           return sample_index;
         })
-        .map(sample_index => { // calculate bet size
-          const bet_size = .02;
+        .map(sample_index => { // calculate params
+          const option_prices = [
+            [272, 13.41],
+            [274, 11.40],
+            [276, 9.44],
+            [278, 7.51],
+            [280, 5.62],
+            [282, 3.81],
+            [284, 2.18], // bet .0375 mean 1.033811844302457 stdev 1.0149567657305945 sharpe 1.018577223393639
+            [286, .93], //  bet .0250 mean 2.645945655175571 stdev 2.4293465850665688 sharpe 1.0891593943163391
+            [288, .28],
+            [290, .09],
+          ];
+          const option_type = default_option_type || [286, .93];
+          const bet_size = default_bet_size || .02;
+          // const option_type = default_option_type || [284, 2.18];
           return {
             sample_index,
+            option_type,
             bet_size
           };
         })
         .map((params, i) => { // calculate return
           const sample_index = params.sample_index;
           const bet_size = params.bet_size;
+          const strike = params.option_type[0];
+          const price = params.option_type[1];
           const sample_return = weekly_summary_spy[sample_index];
           // console.log('sample_return',sample_return)
           const current_price = 285.06;
-          const strike = 284;
-          const price = 2.18;
-          // const strike = 282;
-          // const price = 3.81;
-          // const strike = 280;
-          // const price = 5.62;
-          // const strike = 278;
-          // const price = 7.51;
-          // const strike = 272;
-          // const price = 13.41;
+
 
           const calculated_return = option_profit(current_price, sample_return, strike, price);
           return {
@@ -80,16 +89,33 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
     function sharpe_ratio(interval) {
       return mean(interval) / stdev(interval);
     }
-    const backtests = new Array(1000).fill(0).map(v => {
+    const backtests = new Array(2000).fill(0).map(v => {
       const result = generate_sample_backtest();
       const backtest = result.backtest;
       // console.log('backtest', backtest)
       return backtest;
     })
     const results = backtests.map(backtest => {
+      // console.log(backtest[0], backtest[backtest.length -1])
       return pct_change(backtest[0], backtest[backtest.length -1]);
     }).filter(val => !isNaN(val));
 
+    // histogram
+    const result_histogram = results.map(val => {
+      return Math.ceil(val);
+    }).reduce((accum, val) => {
+      // if(val < 0) {val == 0};
+      if(accum[val] !== undefined) {
+        accum[val]++;
+      }
+      return accum;
+    }, new Array(10).fill(0)).map((dependent, independent) => {
+      return {dependent, independent};
+    });
+    append_line_graph({
+      data: result_histogram
+    });
+    console.log('histogram', result_histogram)
     // graph sample of results, sorted worse to best
     backtests.sort((a, b) => {
       const difference = a[a.length -1] > b[b.length -1];
@@ -97,7 +123,7 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
       return difference;
       })
       .filter((backtest, i) => {
-        return (i % 100) == 0;
+        return (i % 5) == 0;
       })
       .forEach((backtest) => {
       const graph = backtest.map((val, i) => { // convert to graph format
@@ -109,9 +135,12 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
 
       append_line_graph({
         data: graph,
-        // y_range: [80,120]
+        y_range: [80,300]
       });
     });
+
+
+    console.log('backtests', backtests)
     console.log('results', results.sort())
     console.log('mean', mean(results))
     console.log('stdev', stdev(results))
