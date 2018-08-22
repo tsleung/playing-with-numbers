@@ -2,7 +2,8 @@ define(['d3'], function(d3) {
 
   return (params) => {
     const data = params.data;
-    const y_range = params.y_range;
+    const y_range = params.y_range || d3.extent(data, function(d) { return d.dependent; });
+    const append_target = params.append_target || 'body';
     // set the dimensions and margins of the graph
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
         width = 660 - margin.left - margin.right,
@@ -24,7 +25,7 @@ define(['d3'], function(d3) {
     // append the svg obgect to the body of the page
     // appends a 'group' element to 'svg'
     // moves the 'group' element to the top left margin
-    var svg = d3.select("body").append("svg")
+    var svg = d3.select(append_target).append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
       .append("g")
@@ -38,12 +39,8 @@ define(['d3'], function(d3) {
       // ]);
       x.domain(d3.extent(data, function(d) { return d.independent; }));
 
-      if (y_range) {
-        y.domain(y_range);
-      } else {
-        y.domain(d3.extent(data, function(d) { return d.dependent; }));
-      }
-
+      y.domain(y_range);
+      
       /*
       y.domain([
         d3.min(data, function(d) { return d.profit; }),

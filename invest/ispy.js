@@ -11,9 +11,12 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
     const benchmark = await create_close_universe_fs(['SPY']);
 
     // discovery of weekly
-    // const weekly_summary_spy = universe_to_pct_change(benchmark,4)['SPY'].slice(0,250*20);
-    const weekly_summary_spy = universe_to_pct_change(benchmark,5)['SPY'].slice(0,250*20);
-    console.log('weekly_summary_spy', weekly_summary_spy)
+    // const weekly_summary_spy = universe_to_pct_change(benchmark,5)['SPY'].slice(0,250*20);
+    const daily_summary_spy = universe_to_pct_change(benchmark,1)['SPY'].slice(0,250*19);
+    const weekly_summary_spy = universe_to_pct_change(benchmark,4)['SPY'].slice(0,250*19);
+    console.log('benchmark', benchmark['SPY']);
+    console.log('daily_summary_spy', daily_summary_spy);
+    console.log('weekly_summary_spy', weekly_summary_spy);
     function option_profit(current, expected_pct_change, option_strike, option_price) {
       return (current+(current*expected_pct_change) - (option_strike + option_price)) / option_price;
     }
@@ -42,8 +45,14 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
             [288, .28],
             [290, .09],
           ];
+
+          // const option_type = default_option_type || [288, .28];
+          // const bet_size = default_bet_size || .0095;
           const option_type = default_option_type || [286, .93];
           const bet_size = default_bet_size || .02;
+          // const option_type = default_option_type || [284, 2.18];
+          // const bet_size = default_bet_size || .0375;
+
           // const option_type = default_option_type || [284, 2.18];
           return {
             sample_index,
@@ -89,59 +98,66 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
     function sharpe_ratio(interval) {
       return mean(interval) / stdev(interval);
     }
-    const backtests = new Array(2000).fill(0).map(v => {
+
+    const backtests = new Array(6000).fill(0).map(v => {
       const result = generate_sample_backtest();
       const backtest = result.backtest;
       // console.log('backtest', backtest)
       return backtest;
-    })
+    }).filter(val => {
+      return !isNaN(val[val.length -1]);
+    }).sort((a, b) => {
+      const difference = pct_change(a[0],a[a.length -1]) - pct_change(b[0],b[b.length -1]);
+      // console.log('difference', difference, pct_change(a[0],a[a.length -1]) , pct_change(b[0],b[b.length -1]))
+      return difference;
+    });
+
     const results = backtests.map(backtest => {
       // console.log(backtest[0], backtest[backtest.length -1])
       return pct_change(backtest[0], backtest[backtest.length -1]);
-    }).filter(val => !isNaN(val));
+    });
 
     // histogram
     const result_histogram = results.map(val => {
-      return Math.ceil(val);
-    }).reduce((accum, val) => {
-      // if(val < 0) {val == 0};
-      if(accum[val] !== undefined) {
-        accum[val]++;
+      return Math.round(val*10) + 1;
+    }).reduce((accum, expected_return) => {
+      if(accum[expected_return] != undefined) {
+        accum[expected_return]++;
       }
       return accum;
-    }, new Array(10).fill(0)).map((dependent, independent) => {
-      return {dependent, independent};
+    }, new Array(100).fill(0)).map((counts, expected_return) => {
+      return {
+        dependent: counts,
+        independent: (expected_return - 1) / 10
+      };
     });
+    console.log('histogram', result_histogram)
     append_line_graph({
       data: result_histogram
     });
-    console.log('histogram', result_histogram)
-    // graph sample of results, sorted worse to best
-    backtests.sort((a, b) => {
-      const difference = a[a.length -1] > b[b.length -1];
-      // console.log('difference', difference, a[a.length -1], b[b.length -1])
-      return difference;
-      })
-      .filter((backtest, i) => {
-        return (i % 5) == 0;
-      })
-      .forEach((backtest) => {
-      const graph = backtest.map((val, i) => { // convert to graph format
-        return {
-          independent: i,
-          dependent: val,
-        };
-      });
 
-      append_line_graph({
-        data: graph,
-        y_range: [80,300]
+    // graph sample of results, sorted worse to best
+
+    backtests.filter((backtest, i) => {
+        return (i % 100) == 0;
+      })
+      .map((backtest) => {
+        const graph = backtest.map((val, i) => { // convert to graph format
+          return {
+            independent: i,
+            dependent: val,
+          };
+        });
+
+        append_line_graph({
+          data: graph,
+          y_range: [80,300]
+        });
       });
-    });
 
 
     console.log('backtests', backtests)
-    console.log('results', results.sort())
+    console.log('results', results)
     console.log('mean', mean(results))
     console.log('stdev', stdev(results))
     console.log('sharpe', sharpe_ratio(results));
