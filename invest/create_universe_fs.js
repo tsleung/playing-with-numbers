@@ -5,7 +5,7 @@ define(['jquery'], function($) {
   async function create_close_universe_fs(symbols, interval) {
     interval = interval || 'daily';
     return await Promise.all(symbols.map(symbol => {
-      const url = `../data/${interval}/${symbol}.csv`;
+      const url = `/data/${interval}/${symbol}.csv`;
       return $.ajax({url});
     })).then((responses) => {
       console.log('responses', responses)

@@ -1,6 +1,6 @@
-define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
+define(['tf','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
   'utils/sum','utils/nominal_to_percent_change',
-  './create_universe_fs', './create_universe_rh','./universe_to_pct_change','append_line_graph'
+  'invest/create_universe_fs', 'invest/create_universe_rh','invest/universe_to_pct_change','invest/append_line_graph'
 ],
   (tf, rh,pct_change,$,mean,stdev,sum, nominal_to_percent_change,
     create_close_universe_fs, create_close_universe_rh,universe_to_pct_change,append_line_graph) => {
@@ -13,7 +13,7 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
     // discovery of weekly
     // const weekly_summary_spy = universe_to_pct_change(benchmark,5)['SPY'].slice(0,250*20);
     const daily_summary_spy = universe_to_pct_change(benchmark,1)['SPY'].slice(0,250*19);
-    const weekly_summary_spy = universe_to_pct_change(benchmark,4)['SPY'].slice(0,250*19);
+    const weekly_summary_spy = universe_to_pct_change(benchmark,5)['SPY'].slice(0,250*19);
     console.log('benchmark', benchmark['SPY']);
     console.log('daily_summary_spy', daily_summary_spy);
     console.log('weekly_summary_spy', weekly_summary_spy);
@@ -49,7 +49,7 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
           // const option_type = default_option_type || [288, .28];
           // const bet_size = default_bet_size || .0095;
           const option_type = default_option_type || [286, .93];
-          const bet_size = default_bet_size || .025;
+          const bet_size = default_bet_size || .75;
           // const option_type = default_option_type || [284, 2.18];
           // const bet_size = default_bet_size || .0375;
 
@@ -150,7 +150,7 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
         accum[expected_return]++;
       }
       return accum;
-    }, new Array(100).fill(0)).map((counts, expected_return) => {
+    }, new Array(150).fill(0)).map((counts, expected_return) => {
       return {
         dependent: counts,
         independent: (expected_return - 1) / 10
@@ -192,7 +192,8 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
       console.log('.90', results[Math.round(results.length*.9)])
     }
 
-    console.log('backtests', backtests)
+    console.log('backtests', backtests);
+    console.log('results', results);
     summary(results, 'results');
     summary(mean_drawdown, 'mean_drawdown');
     summary(max_drawdown, 'max_drawdown');
