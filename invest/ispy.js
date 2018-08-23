@@ -108,14 +108,16 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
       return !isNaN(val[val.length -1]);
     }).sort((a, b) => {
       const difference = pct_change(a[0],a[a.length -1]) - pct_change(b[0],b[b.length -1]);
-      // console.log('difference', difference, pct_change(a[0],a[a.length -1]) , pct_change(b[0],b[b.length -1]))
       return difference;
     });
 
     const results = backtests.map(backtest => {
-      // console.log(backtest[0], backtest[backtest.length -1])
       return pct_change(backtest[0], backtest[backtest.length -1]);
     });
+
+    const sharpe = backtests.map(backtest => {
+      return sharpe_ratio(backtest);
+    }).sort();
 
     const drawdown = backtests.map(backtest => {
       return backtest.reduce((accum, val) => {
@@ -134,14 +136,11 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
 
     const max_drawdown = drawdown.map(backtest => {
       return Math.min.apply(undefined, backtest);
-    });
+    }).sort();
 
     const mean_drawdown = drawdown.map(backtest => {
       return mean(backtest);
-    });
-
-    console.log('mean_drawdown', mean_drawdown);
-    console.log('max_drawdown', max_drawdown)
+    }).sort();
 
     // histogram
     const result_histogram = results.map(val => {
@@ -183,7 +182,7 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
 
     function summary(results, name) {
       name = name || 'results';
-      console.log(results, name)
+      console.log(name.toUpperCase())
       console.log('mean', mean(results))
       console.log('stdev', stdev(results))
       console.log('.10', results[Math.round(results.length*.10)])
@@ -197,11 +196,15 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
     summary(results, 'results');
     summary(mean_drawdown, 'mean_drawdown');
     summary(max_drawdown, 'max_drawdown');
-    // setInterval(() => {
-    //   generate_sample_backtest();
-    // }, 500)
+    summary(sharpe, 'sharpe');
 
-    // console.log('weekly_summary_spy',weekly_summary_spy.sort(), stdev(weekly_summary_spy), mean(weekly_summary_spy))
-    // end discovery of weekly
+    console.log('sharpe of all results', sharpe_ratio(results))
   };
 });
+/*
+Rules to train agent
+Max drawdown and drawdown are no different
+Punish deviation from mean negative, not positive
+Mean vs median return?
+
+*/
