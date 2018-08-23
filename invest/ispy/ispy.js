@@ -1,47 +1,78 @@
-define(['tf','rxjs','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
+define(['tf','serializeJSON','rxjs','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
   'utils/sum','utils/nominal_to_percent_change',
   'invest/create_universe_fs', 'invest/create_universe_rh','invest/universe_to_pct_change','invest/append_line_graph'
 ],
-  (tf,rxjs, rh,pct_change,$,mean,stdev,sum, nominal_to_percent_change,
+  (tf,serializeJSON,rxjs, rh,pct_change,$,mean,stdev,sum, nominal_to_percent_change,
     create_close_universe_fs, create_close_universe_rh,universe_to_pct_change,append_line_graph) => {
 console.log('rx',rxjs)
   return () => {
-    const bet_size_subject = new rxjs.Subject();
-    bet_size_subject.pipe(
-      rxjs.operators.startWith(0.01),
-      rxjs.operators.tap((bet) => {
-        $('.bet_size .current').html(bet);
+    const settings = new rxjs.Subject();
+    settings.pipe(
+      rxjs.operators.startWith({
+        bet_size: 0.01,
+        underlying: {
+          symbol: 'SPY',
+          price: 285.06,
+        },
+        option: {
+          days_to_expiration: 5,
+          strike: 286,
+          price: .93,
+        }
+    }),
+      rxjs.operators.tap((settings) => {
+        console.log('tap settings', settings);
+        $('.settings .bet_size .current').html(settings.bet_size);
+        $('.settings [name="bet_size"]').val(settings.bet_size);
+        $('.settings [name="underlying[symbol]"]').val(settings.underlying.symbol);
+        $('.settings [name="underlying[price]"]').val(settings.underlying.price);
+        $('.settings [name="option[days_to_expiration]"]').val(settings.option.days_to_expiration);
+        $('.settings [name="option[strike]"]').val(settings.option.strike);
+        $('.settings [name="option[price]"]').val(settings.option.price);
       }),
-      rxjs.operators.throttleTime(1000)
+      rxjs.operators.throttleTime(1000, undefined,{leading: true, trailing: true}),
+      rxjs.operators.distinctUntilChanged()
     )
-    .subscribe((bet) => {
-      console.log('new bet',bet)
+    .subscribe((settings) => {
+      console.log('new bet',settings)
       $('.simulation').empty();
 
       run_backtest(
-        [286, .93],
-        bet
+        settings.underlying.symbol,
+        Number(settings.underlying.price),
+        [
+          Number(settings.option.strike), Number(settings.option.price)
+        ],
+        Number(settings.bet_size),
+        Number(settings.option.days_to_expiration)
       );
     });
 
-    $('.bet_size input[type=range]').on('change input', (e) => {
-      bet_size_subject.next(e.target.value);
+    $('.settings').on('change input', (e) => {
+      const update = $('.settings').serializeJSON();
+      settings.next(update);
     });
 
   };
 
-  async function run_backtest(default_option_type, default_bet_size){
-    console.log('rl_rank')
+  async function run_backtest(
+    default_symbol,
+    default_current_price,
+    default_option_type,
+    default_bet_size,
+    days_to_expiration
+  ){
+    console.log('ispy', arguments)
 
-    const benchmark = await create_close_universe_fs(['SPY']);
+    const benchmark = await create_close_universe_fs([default_symbol]);
 
     // discovery of weekly
     // const weekly_summary_spy = universe_to_pct_change(benchmark,5)['SPY'].slice(0,250*20);
-    const daily_summary_spy = universe_to_pct_change(benchmark,1)['SPY'].slice(0,250*19);
-    const weekly_summary_spy = universe_to_pct_change(benchmark,5)['SPY'].slice(0,250*19);
-    console.log('benchmark', benchmark['SPY']);
-    console.log('daily_summary_spy', daily_summary_spy);
-    console.log('weekly_summary_spy', weekly_summary_spy);
+    const daily_summary_spy = universe_to_pct_change(benchmark,1)[default_symbol].slice(0,250*19);
+    const weekly_summary_spy = universe_to_pct_change(benchmark,days_to_expiration)[default_symbol].slice(0,250*19);
+    console.log('benchmark', benchmark[default_symbol]);
+    console.log('daily_returns', daily_summary_spy);
+    console.log('weekly_returns', weekly_summary_spy);
     function option_profit(current, expected_pct_change, option_strike, option_price) {
       return (current+(current*expected_pct_change) - (option_strike + option_price)) / option_price;
     }
@@ -92,7 +123,7 @@ console.log('rx',rxjs)
           const price = params.option_type[1];
           const sample_return = weekly_summary_spy[sample_index];
           // console.log('sample_return',sample_return)
-          const current_price = 285.06;
+          const current_price = default_current_price;
 
 
           const calculated_return = option_profit(current_price, sample_return, strike, price);

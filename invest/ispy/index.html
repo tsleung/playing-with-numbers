@@ -12,18 +12,36 @@
   stroke: steelblue;
   stroke-width: 2px;
 }
-.bet_size .slider {
+input[type="text"], input[type="number"] {
+  width: 10%;
+}
+.settings .slider {
   width: 80%;
 }
 
 </style>
 </head>
 <body>
-  <section class="bet_size">
-    <input type="range" min="0" max=".5" step=".001" value="0" class="slider bet_size">
-    <label>Bet size <span class="current"></span></label>
-  </section>
+  <form class="settings">
+    <span class="underlying">
+      Underlying
+      <input type="text" name="underlying[symbol]" placeholder="Symbol"/>
+      <input type="number" name="underlying[price]" placeholder="Price"/>
+    </span>
+    <span class="option">
+      Option
+      <input type="number" name="option[strike]" placeholder="Strike"/>
+      <input type="number" name="option[price]" placeholder="Price"/>
+      <input type="number" name="option[days_to_expiration]" placeholder="Days to expiration"/>
+    </span>
+    <div class="bet_size">
+      <input type="range" name="bet_size" min="0" max=".5" step=".001" value="0" class="slider">
+      <label>Bet size <span class="current"></span></label>
+    </div>
+  </form>
+  <section class="summary">
 
+  </section>
   <section class="simulation">
 
   </section>
@@ -32,7 +50,7 @@
 <script type="text/javascript">
     require.config({
     shim : {
-        'jquery.serializeJSON' : {
+        'serializeJSON' : {
     	      deps : ['jquery'],
             exports : 'jQuery.fn.serializeJSON'
         },
@@ -45,7 +63,7 @@
         'utils': '../../utils',
         'rxjs': '../../libs/rxjs',
         'd3': '../../libs/d3',
-        'jquery.serializeJSON':'../libs/jquery.serializejson',
+        'serializeJSON':'../../libs/jquery.serializejson',
         'tf': '../../libs/tf',
         'jquery': '../../libs/jquery',
 
