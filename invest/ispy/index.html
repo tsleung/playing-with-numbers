@@ -12,10 +12,23 @@
   stroke: steelblue;
   stroke-width: 2px;
 }
+.bet_size .slider {
+  width: 80%;
+}
 
 </style>
 </head>
 <body>
+  <section class="bet_size">
+    <input type="range" min="0" max=".5" step=".001" value="0" class="slider bet_size">
+    <label>Bet size <span class="current"></span></label>
+  </section>
+
+  <section class="simulation">
+
+  </section>
+
+
 <script type="text/javascript">
     require.config({
     shim : {
@@ -28,14 +41,13 @@
         }
     },
     paths: {
-        invest: '../',
+        'invest': '../',
         'utils': '../../utils',
-        //'rxjs': 'https://cdnjs.cloudflare.com/ajax/libs/rxjs/6.2.2/rxjs.umd',
-        'rxjs': '../../libs/rx',
+        'rxjs': '../../libs/rxjs',
         'd3': '../../libs/d3',
         'jquery.serializeJSON':'../libs/jquery.serializejson',
-        tf: '../../libs/tf',
-        jquery: '../../libs/jquery',
+        'tf': '../../libs/tf',
+        'jquery': '../../libs/jquery',
 
     }
   });

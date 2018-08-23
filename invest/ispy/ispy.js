@@ -1,11 +1,36 @@
-define(['tf','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
+define(['tf','rxjs','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
   'utils/sum','utils/nominal_to_percent_change',
   'invest/create_universe_fs', 'invest/create_universe_rh','invest/universe_to_pct_change','invest/append_line_graph'
 ],
-  (tf, rh,pct_change,$,mean,stdev,sum, nominal_to_percent_change,
+  (tf,rxjs, rh,pct_change,$,mean,stdev,sum, nominal_to_percent_change,
     create_close_universe_fs, create_close_universe_rh,universe_to_pct_change,append_line_graph) => {
+console.log('rx',rxjs)
+  return () => {
+    const bet_size_subject = new rxjs.Subject();
+    bet_size_subject.pipe(
+      rxjs.operators.startWith(0.01),
+      rxjs.operators.tap((bet) => {
+        $('.bet_size .current').html(bet);
+      }),
+      rxjs.operators.throttleTime(1000)
+    )
+    .subscribe((bet) => {
+      console.log('new bet',bet)
+      $('.simulation').empty();
 
-  return async () => {
+      run_backtest(
+        [286, .93],
+        bet
+      );
+    });
+
+    $('.bet_size input[type=range]').on('change input', (e) => {
+      bet_size_subject.next(e.target.value);
+    });
+
+  };
+
+  async function run_backtest(default_option_type, default_bet_size){
     console.log('rl_rank')
 
     const benchmark = await create_close_universe_fs(['SPY']);
@@ -23,7 +48,7 @@ define(['tf','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev'
 
     // simple random sample test
 
-    function generate_sample_backtest(default_option_type, default_bet_size) {
+    function generate_sample_backtest() {
       const index_pool = weekly_summary_spy.length;
       const calculated_returns = new Array(1 * 50)
         .fill(index_pool)
@@ -48,8 +73,8 @@ define(['tf','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev'
 
           // const option_type = default_option_type || [288, .28];
           // const bet_size = default_bet_size || .0095;
-          const option_type = default_option_type || [286, .93];
-          const bet_size = default_bet_size || .75;
+          const option_type = default_option_type;
+          const bet_size = default_bet_size;
           // const option_type = default_option_type || [284, 2.18];
           // const bet_size = default_bet_size || .0375;
 
@@ -158,7 +183,8 @@ define(['tf','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev'
     });
     console.log('histogram', result_histogram)
     append_line_graph({
-      data: result_histogram
+      data: result_histogram,
+      append_target: '.simulation'
     });
 
     // graph sample of results, sorted worse to best
@@ -175,6 +201,7 @@ define(['tf','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev'
         });
 
         append_line_graph({
+          append_target: '.simulation',
           data: graph,
           y_range: [80,1000]
         });
