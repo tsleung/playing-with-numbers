@@ -49,7 +49,7 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
           // const option_type = default_option_type || [288, .28];
           // const bet_size = default_bet_size || .0095;
           const option_type = default_option_type || [286, .93];
-          const bet_size = default_bet_size || .02;
+          const bet_size = default_bet_size || .025;
           // const option_type = default_option_type || [284, 2.18];
           // const bet_size = default_bet_size || .0375;
 
@@ -99,7 +99,7 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
       return mean(interval) / stdev(interval);
     }
 
-    const backtests = new Array(6000).fill(0).map(v => {
+    const backtests = new Array(10000).fill(0).map(v => {
       const result = generate_sample_backtest();
       const backtest = result.backtest;
       // console.log('backtest', backtest)
@@ -116,6 +116,32 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
       // console.log(backtest[0], backtest[backtest.length -1])
       return pct_change(backtest[0], backtest[backtest.length -1]);
     });
+
+    const drawdown = backtests.map(backtest => {
+      return backtest.reduce((accum, val) => {
+          const last = accum[accum.length -1];
+          const previous_high = last.previous_high > val ? last.previous_high : val;
+          const current_drawdown = pct_change(previous_high, val);
+          const record = {
+            previous_high,
+            current_drawdown
+          };
+          accum.push(record)
+          return accum;
+        }, [{previous_high: backtest[0], current_drawdown: 0}])
+        .map(val => val.current_drawdown);
+    });
+
+    const max_drawdown = drawdown.map(backtest => {
+      return Math.min.apply(undefined, backtest);
+    });
+
+    const mean_drawdown = drawdown.map(backtest => {
+      return mean(backtest);
+    });
+
+    console.log('mean_drawdown', mean_drawdown);
+    console.log('max_drawdown', max_drawdown)
 
     // histogram
     const result_histogram = results.map(val => {
@@ -139,7 +165,7 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
     // graph sample of results, sorted worse to best
 
     backtests.filter((backtest, i) => {
-        return (i % 100) == 0;
+        return (i % 200) == 0;
       })
       .map((backtest) => {
         const graph = backtest.map((val, i) => { // convert to graph format
@@ -151,16 +177,26 @@ define(['tf','rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
 
         append_line_graph({
           data: graph,
-          y_range: [80,300]
+          y_range: [80,1000]
         });
       });
 
+    function summary(results, name) {
+      name = name || 'results';
+      console.log(results, name)
+      console.log('mean', mean(results))
+      console.log('stdev', stdev(results))
+      console.log('.10', results[Math.round(results.length*.10)])
+      console.log('.25', results[Math.round(results.length*.25)])
+      console.log('.50', results[Math.round(results.length*.5)])
+      console.log('.75', results[Math.round(results.length*.75)])
+      console.log('.90', results[Math.round(results.length*.9)])
+    }
 
     console.log('backtests', backtests)
-    console.log('results', results)
-    console.log('mean', mean(results))
-    console.log('stdev', stdev(results))
-    console.log('sharpe', sharpe_ratio(results));
+    summary(results, 'results');
+    summary(mean_drawdown, 'mean_drawdown');
+    summary(max_drawdown, 'max_drawdown');
     // setInterval(() => {
     //   generate_sample_backtest();
     // }, 500)
