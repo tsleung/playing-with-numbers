@@ -4,13 +4,17 @@
   <title>Prototype Boilerplate</title>
   <script type="text/javascript" src="../../libs/less.js"></script>
   <script type="text/javascript" src="../../libs/require.js"></script>
-
 <style> /* set the CSS */
 
 .line {
   fill: none;
   stroke: steelblue;
   stroke-width: 2px;
+}
+.simulation {
+  max-height: 20rem;
+  overflow:scroll;
+  border: 1px solid #ddd;
 }
 input[type="text"], input[type="number"] {
   width: 10%;
@@ -22,6 +26,7 @@ input[type="text"], input[type="number"] {
 </style>
 </head>
 <body>
+
   <form class="settings">
     <span class="underlying">
       Underlying
@@ -39,40 +44,54 @@ input[type="text"], input[type="number"] {
       <label>Bet size <span class="current"></span></label>
     </div>
   </form>
-  <section class="summary">
+  <section class='explore'>
+    <h2>Explore</h2>
+    <section class="summary">
+
+    </section>
+    <section class="simulation">
+
+    </section>
 
   </section>
-  <section class="simulation">
+  <section class='spy'>
+    <h2>SPY</h2>
+    <section class="summary">
 
+    </section>
   </section>
+  <section class='xlk'>
+    <h2>XLK</h2>
+    <section class="summary">
 
+    </section>
+  </section>
+  <script type="text/javascript">
+      require.config({
+      shim : {
+          'serializeJSON' : {
+      	      deps : ['jquery'],
+              exports : 'jQuery.fn.serializeJSON'
+          },
+          'tf' : {
+              exports : 'tf'
+          }
+      },
+      paths: {
+          'invest': '../',
+          'utils': '../../utils',
+          'rxjs': '../../libs/rxjs',
+          'd3': '../../libs/d3',
+          'serializeJSON':'../../libs/jquery.serializejson',
+          'tf': '../../libs/tf',
+          'jquery': '../../libs/jquery',
 
-<script type="text/javascript">
-    require.config({
-    shim : {
-        'serializeJSON' : {
-    	      deps : ['jquery'],
-            exports : 'jQuery.fn.serializeJSON'
-        },
-        'tf' : {
-            exports : 'tf'
-        }
-    },
-    paths: {
-        'invest': '../',
-        'utils': '../../utils',
-        'rxjs': '../../libs/rxjs',
-        'd3': '../../libs/d3',
-        'serializeJSON':'../../libs/jquery.serializejson',
-        'tf': '../../libs/tf',
-        'jquery': '../../libs/jquery',
-
-    }
-  });
-</script>
-<script>
-  require(['./ispy'], (index) => index());
-  // require(['option_return_research'], (index) => index());
-</script>
+      }
+    });
+  </script>
+  <script>
+    require(['./ispy'], (index) => index());
+    // require(['option_return_research'], (index) => index());
+  </script>
 </body>
 </html>

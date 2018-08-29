@@ -40,7 +40,7 @@ define(['d3'], function(d3) {
       x.domain(d3.extent(data, function(d) { return d.independent; }));
 
       y.domain(y_range);
-      
+
       /*
       y.domain([
         d3.min(data, function(d) { return d.profit; }),

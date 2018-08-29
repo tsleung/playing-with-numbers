@@ -1,6 +1,66 @@
 define(['jquery'], ($) => {
+  const cache = {
+
+  };
+  //
+  // console.log('next opts');
+  // next_options('SPY').then(response => {
+  //   console.log('next opts',response);
+  // })
+
   return {
-    historical_quote
+    historical_quote,
+    options,
+    fundamentals
+  };
+
+  function getNumWorkDays(startDate, endDate) {
+      var numWorkDays = 0;
+      var currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+          // Skips Sunday and Saturday
+          if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+              numWorkDays++;
+          }
+          currentDate = currentDate.addDays(1);
+      }
+      return numWorkDays;
+  }
+  // fundamentals: https://api.robinhood.com/instruments/?symbol=symbol
+  // option dates: https://api.robinhood.com/options/chains/c277b118-58d9-4060-8dc5-a3b5898955cb/
+  // option by date: https://api.robinhood.com/options/instruments/?chain_id=c277b118-58d9-4060-8dc5-a3b5898955cb&expiration_dates=2018-08-29&state=active&tradability=tradable&type=call
+  function next_options(symbol, num) {
+    num = num || 5;
+    return option_dates(symbol).then(response => {
+      const instrument_id = response.id;
+      return response.expiration_dates.slice(0, num).map(expiration_date => {
+        return options(instrument_id, expiration_date);
+      })
+
+    }).then(arr => {
+      return Promise.all(arr);
+    });
+  }
+
+  function fundamentals(symbol) {
+    const url = `https://api.robinhood.com/instruments/?symbol=${symbol}`;
+    cache[url] = cache[url] || $.ajax({url});
+    return cache[url];
+  }
+
+  function option_dates(symbol) {
+    return fundamentals(symbol).then(response => {
+      const instrument_id = response.results[0].tradable_chain_id;
+      const url =  `https://api.robinhood.com/options/chains/${instrument_id}`;
+      cache[url] = cache[url] || $.ajax({url});
+      return cache[url];
+    });
+  }
+
+  function options(instrument_id, date) {
+    const url = `https://api.robinhood.com/options/instruments/?chain_id=${instrument_id}&expiration_dates=${date}&state=active&tradability=tradable&type=call`;
+    cache[url] = cache[url] || $.ajax({url});
+    return cache[url];
   }
 
   /**

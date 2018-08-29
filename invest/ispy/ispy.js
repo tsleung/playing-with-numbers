@@ -1,23 +1,53 @@
-define(['tf','serializeJSON','rxjs','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
+define([
+  'tf','serializeJSON','rxjs','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
   'utils/sum','utils/nominal_to_percent_change',
-  'invest/create_universe_fs', 'invest/create_universe_rh','invest/universe_to_pct_change','invest/append_line_graph'
+  'invest/create_universe_fs', 'invest/create_universe_rh','invest/universe_to_pct_change',
+  'invest/append_line_graph', 'invest/sharpe_ratio', 'invest/sortino_ratio',
+  './generate_sample_backtest'
 ],
-  (tf,serializeJSON,rxjs, rh,pct_change,$,mean,stdev,sum, nominal_to_percent_change,
-    create_close_universe_fs, create_close_universe_rh,universe_to_pct_change,append_line_graph) => {
+  (
+    tf,serializeJSON,rxjs, rh,pct_change,$,mean,stdev,
+    sum, nominal_to_percent_change,
+    create_close_universe_fs, create_close_universe_rh,universe_to_pct_change,
+    append_line_graph, sharpe_ratio, sortino_ratio,
+    generate_sample_backtest
+  ) => {
 console.log('rx',rxjs)
+// continue refactoring backtests/measurement tools out of this filter
+// this file should focus on the business case and answering specific targeted questiosn
+// as those questions are answered, results should be presented in an actionable fashion
+// e.g. what to buy, and how much of it
+
+// multiplicative, average, additive
+// power, normal, erlang
   return () => {
+
+/*
+    $.ajax({
+      url: '/data/spy-option-chain.json'
+    }).then(response => {
+      console.log('options', response)
+      return Promise.all(response.optionChain.result[0].expirationDates.slice(0,10).map(expiration_date => {
+        return $.ajax({
+          url: `https://query2.finance.yahoo.com/v7/finance/options/spy?date=${expiration_date}`
+        })
+      }));
+    }).then(response => {
+      console.log('options', response)
+    });
+    */
     const settings = new rxjs.Subject();
     settings.pipe(
       rxjs.operators.startWith({
-        bet_size: 0.01,
+        bet_size: 0.02,
         underlying: {
           symbol: 'SPY',
-          price: 285.06,
+          price: 289.78,
         },
         option: {
-          days_to_expiration: 5,
-          strike: 286,
-          price: .93,
+          days_to_expiration: 4,
+          strike: 288,
+          price: -.41,
         }
     }),
       rxjs.operators.tap((settings) => {
@@ -33,19 +63,18 @@ console.log('rx',rxjs)
       rxjs.operators.throttleTime(1000, undefined,{leading: true, trailing: true}),
       rxjs.operators.distinctUntilChanged()
     )
-    .subscribe((settings) => {
+    .subscribe(async (settings) => {
       console.log('new bet',settings)
-      $('.simulation').empty();
+      $('.explore .summary').empty();
+      $('.explore .simulation').empty();
 
-      run_backtest(
-        settings.underlying.symbol,
-        Number(settings.underlying.price),
-        [
-          Number(settings.option.strike), Number(settings.option.price)
-        ],
-        Number(settings.bet_size),
-        Number(settings.option.days_to_expiration)
-      );
+      run_backtest(settings);
+      const backtests = await run_backtest(settings);
+      print_summary(`.explore .summary`, backtests);
+      append_simulation(`.explore .simulation`, backtests);
+      console.log('EXPLORE');
+      print_details(backtests);
+
     });
 
     $('.settings').on('change input', (e) => {
@@ -53,110 +82,73 @@ console.log('rx',rxjs)
       settings.next(update);
     });
 
+    const watchlist = [
+      {
+        bet_size: 0.02,
+        underlying: {
+          symbol: 'SPY',
+          price: 290.04,
+        },
+        option: {
+          days_to_expiration: 4,
+          strike: 290.5,
+          price: .84,
+        }
+      },
+      {
+        bet_size: 0.02,
+        underlying: {
+          symbol: 'XLK',
+          price: 74.96,
+        },
+        option: {
+          days_to_expiration: 7,
+          strike: 75.5,
+          price: .31,
+        }
+      }
+    ].forEach(async (settings) => {
+      return;
+      const backtests = await run_backtest(settings);
+      print_summary(`.${settings.underlying.symbol.toLowerCase()} .summary`, backtests);
+      console.log(settings.underlying.symbol);
+      print_details(backtests);
+    });
+
   };
 
-  async function run_backtest(
-    default_symbol,
-    default_current_price,
-    default_option_type,
-    default_bet_size,
-    days_to_expiration
-  ){
+  async function run_backtest(settings) {
+    const default_symbol = settings.underlying.symbol;
+    const default_current_price = Number(settings.underlying.price);
+    const default_option_type = [
+      Number(settings.option.strike), Number(settings.option.price)
+    ];
+    const default_bet_size = Number(settings.bet_size);
+    const days_to_expiration = Number(settings.option.days_to_expiration);
     console.log('ispy', arguments)
 
     const benchmark = await create_close_universe_fs([default_symbol]);
 
     // discovery of weekly
     // const weekly_summary_spy = universe_to_pct_change(benchmark,5)['SPY'].slice(0,250*20);
-    const daily_summary_spy = universe_to_pct_change(benchmark,1)[default_symbol].slice(0,250*19);
-    const weekly_summary_spy = universe_to_pct_change(benchmark,days_to_expiration)[default_symbol].slice(0,250*19);
+    const daily_summary_spy = universe_to_pct_change(benchmark,1)[default_symbol].slice(0,250*11);
+    const weekly_summary_spy = universe_to_pct_change(benchmark,days_to_expiration)[default_symbol].slice(0,250*11);
+    const default_series = weekly_summary_spy;
     console.log('benchmark', benchmark[default_symbol]);
     console.log('daily_returns', daily_summary_spy);
     console.log('weekly_returns', weekly_summary_spy);
-    function option_profit(current, expected_pct_change, option_strike, option_price) {
-      return (current+(current*expected_pct_change) - (option_strike + option_price)) / option_price;
-    }
 
-    // simple random sample test
-
-    function generate_sample_backtest() {
-      const index_pool = weekly_summary_spy.length;
-      const calculated_returns = new Array(1 * 50)
-        .fill(index_pool)
-        .map((index_pool, i) => {
-          const sample_index = Math.round(Math.random() * index_pool);
-          // console.log('sample_index',sample_index)
-          return sample_index;
-        })
-        .map(sample_index => { // calculate params
-          const option_prices = [
-            [272, 13.41],
-            [274, 11.40],
-            [276, 9.44],
-            [278, 7.51],
-            [280, 5.62],
-            [282, 3.81],
-            [284, 2.18], // bet .0375 mean 1.033811844302457 stdev 1.0149567657305945 sharpe 1.018577223393639
-            [286, .93], //  bet .0250 mean 2.645945655175571 stdev 2.4293465850665688 sharpe 1.0891593943163391
-            [288, .28],
-            [290, .09],
-          ];
-
-          // const option_type = default_option_type || [288, .28];
-          // const bet_size = default_bet_size || .0095;
-          const option_type = default_option_type;
-          const bet_size = default_bet_size;
-          // const option_type = default_option_type || [284, 2.18];
-          // const bet_size = default_bet_size || .0375;
-
-          // const option_type = default_option_type || [284, 2.18];
-          return {
-            sample_index,
-            option_type,
-            bet_size
-          };
-        })
-        .map((params, i) => { // calculate return
-          const sample_index = params.sample_index;
-          const bet_size = params.bet_size;
-          const strike = params.option_type[0];
-          const price = params.option_type[1];
-          const sample_return = weekly_summary_spy[sample_index];
-          // console.log('sample_return',sample_return)
-          const current_price = default_current_price;
-
-
-          const calculated_return = option_profit(current_price, sample_return, strike, price);
-          return {
-            calculated_return,
-            bet_size
-          };
-        })
-      const backtest = calculated_returns
-        .reduce((accum, params) => { // bankroll over time
-          const current_bank = accum[accum.length - 1];
-          const bet_size = params.bet_size;
-          const calculated_return = params.calculated_return;
-          // 100 * .2 * .1 + 100 = 102
-          // 100 * 1 * .1 + 100 = 110
-          const updated_bank = (current_bank * bet_size * Math.max(calculated_return,-1)) + current_bank;
-          accum.push(updated_bank);
-          return accum;
-        }, [100]);
-
-        return {
-          calculated_returns,
-          backtest
-        }
-    }
-    generate_sample_backtest();
     // generate more backtests
-    function sharpe_ratio(interval) {
-      return mean(interval) / stdev(interval);
-    }
+
 
     const backtests = new Array(10000).fill(0).map(v => {
-      const result = generate_sample_backtest();
+      const result = generate_sample_backtest(default_series,
+      default_symbol,
+      default_current_price,
+      default_option_type,
+      default_bet_size,
+      days_to_expiration
+    );
       const backtest = result.backtest;
       // console.log('backtest', backtest)
       return backtest;
@@ -167,9 +159,40 @@ console.log('rx',rxjs)
       return difference;
     });
 
+    return backtests;
+  };
+
+  function print_summary(append_target, backtests) {
+
     const results = backtests.map(backtest => {
       return pct_change(backtest[0], backtest[backtest.length -1]);
     });
+
+    // histogram
+    const result_histogram = results.map(val => {
+      return Math.round(val*10) + 1;
+    }).reduce((accum, expected_return) => {
+      if(accum[expected_return] != undefined) {
+        accum[expected_return]++;
+      }
+      return accum;
+    }, new Array(50).fill(0)).map((counts, expected_return) => {
+      return {
+        dependent: counts,
+        independent: (expected_return - 1) / 10
+      };
+    });
+    console.log('histogram', result_histogram)
+    append_line_graph({
+      data: result_histogram,
+      append_target
+    });
+
+    console.log('results', results);
+    summary(results, 'results');
+  }
+
+  function print_details(backtests) {
 
     const sharpe = backtests.map(backtest => {
       return sharpe_ratio(backtest);
@@ -198,30 +221,18 @@ console.log('rx',rxjs)
       return mean(backtest);
     }).sort();
 
-    // histogram
-    const result_histogram = results.map(val => {
-      return Math.round(val*10) + 1;
-    }).reduce((accum, expected_return) => {
-      if(accum[expected_return] != undefined) {
-        accum[expected_return]++;
-      }
-      return accum;
-    }, new Array(150).fill(0)).map((counts, expected_return) => {
-      return {
-        dependent: counts,
-        independent: (expected_return - 1) / 10
-      };
-    });
-    console.log('histogram', result_histogram)
-    append_line_graph({
-      data: result_histogram,
-      append_target: '.simulation'
-    });
 
+
+    //console.log('backtests', backtests);
+    summary(mean_drawdown, 'mean_drawdown');
+    summary(max_drawdown, 'max_drawdown');
+    summary(sharpe, 'sharpe');
+  }
+
+  function append_simulation(append_target, backtests) {
     // graph sample of results, sorted worse to best
-
     backtests.filter((backtest, i) => {
-        return (i % 200) == 0;
+        return (i % 500) == 0;
       })
       .map((backtest) => {
         const graph = backtest.map((val, i) => { // convert to graph format
@@ -232,33 +243,24 @@ console.log('rx',rxjs)
         });
 
         append_line_graph({
-          append_target: '.simulation',
+          append_target,
           data: graph,
-          y_range: [80,1000]
+          y_range: [.8,10]
         });
       });
 
-    function summary(results, name) {
-      name = name || 'results';
-      console.log(name.toUpperCase())
-      console.log('mean', mean(results))
-      console.log('stdev', stdev(results))
-      console.log('.10', results[Math.round(results.length*.10)])
-      console.log('.25', results[Math.round(results.length*.25)])
-      console.log('.50', results[Math.round(results.length*.5)])
-      console.log('.75', results[Math.round(results.length*.75)])
-      console.log('.90', results[Math.round(results.length*.9)])
-    }
-
-    console.log('backtests', backtests);
-    console.log('results', results);
-    summary(results, 'results');
-    summary(mean_drawdown, 'mean_drawdown');
-    summary(max_drawdown, 'max_drawdown');
-    summary(sharpe, 'sharpe');
-
-    console.log('sharpe of all results', sharpe_ratio(results))
-  };
+  }
+  function summary(results, name) {
+    name = name || 'results';
+    console.log(name.toUpperCase())
+    console.log('mean', mean(results))
+    console.log('stdev', stdev(results))
+    console.log('.10', results[Math.round(results.length*.10)])
+    console.log('.25', results[Math.round(results.length*.25)])
+    console.log('.50', results[Math.round(results.length*.5)])
+    console.log('.75', results[Math.round(results.length*.75)])
+    console.log('.90', results[Math.round(results.length*.9)])
+  }
 });
 /*
 Rules to train agent
