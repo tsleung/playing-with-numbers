@@ -70,11 +70,11 @@ console.log('rx',rxjs)
       $('.explore .summary').empty();
       $('.explore .simulation').empty();
 
-      run_backtest(settings);
-      const backtests = await run_backtest(settings);
+      // run_backtest([settings]);
+      const backtests = await run_backtest([settings]);
+      console.log('EXPLORE');
       print.print_summary(`.explore .summary`, backtests);
       print.append_simulation(`.explore .simulation`, backtests);
-      console.log('EXPLORE');
       print.print_details(backtests);
 
     });
@@ -85,51 +85,63 @@ console.log('rx',rxjs)
     });
 
     (async function() {
-      const settings = {};
-      run_backtest(settings);
-      const backtests = await run_backtest(settings);
-      print.print_summary(`.explore .summary`, backtests);
-      print.append_simulation(`.explore .simulation`, backtests);
-      console.log('EXPLORE');
+      const backtests = await run_backtest([
+        {
+          bet_size: 0.015,
+          underlying: {
+            symbol: 'SPY',
+            price: 291.48,
+          },
+          option: {
+            days_to_expiration: 6,
+            strike: 293,
+            price: 0.79,
+          }
+        }, {
+          bet_size: 0.015,
+          underlying: {
+            symbol: 'SPY',
+            price: 291.48,
+          },
+          option: {
+            days_to_expiration: 6,
+            strike: 293,
+            price: 0.79,
+          }
+      }]);
+      console.log('Portfolio');
+      print.print_summary(`.portfolio .summary`, backtests);
+      print.append_simulation(`.portfolio .simulation`, backtests);
+
       print.print_details(backtests);
-    })
+    })();
   };
 
-  async function run_backtest(settings) {
-    const default_symbol = settings.underlying.symbol;
-    const default_current_price = Number(settings.underlying.price);
-    const default_option_type = [
-      Number(settings.option.strike), Number(settings.option.price)
-    ];
-    const default_bet_size = Number(settings.bet_size);
-    const days_to_expiration = Number(settings.option.days_to_expiration);
+  async function bet_from(settings) {
+    const universe = await create_close_universe_fs([settings.underlying.symbol]);
+    const series = universe_to_pct_change(
+      universe,
+      Number(settings.option.days_to_expiration)
+    )[settings.underlying.symbol].slice(0,250*11);
+
+    return {
+      series: series,
+      current_price: Number(settings.underlying.price),
+      option_type: [
+        Number(settings.option.strike), Number(settings.option.price)
+      ],
+      bet_size: (index) => { // can lookup features by index
+        return Number(settings.bet_size);
+      }
+    };
+  }
+
+  async function run_backtest(bets_settings) {
     console.log('ispy', arguments)
-
-    const benchmark = await create_close_universe_fs([default_symbol]);
-
-    // discovery of weekly
-    // const weekly_summary_spy = universe_to_pct_change(benchmark,5)['SPY'].slice(0,250*20);
-    const daily_summary_spy = universe_to_pct_change(benchmark,1)[default_symbol].slice(0,250*11);
-    const weekly_summary_spy = universe_to_pct_change(benchmark,days_to_expiration)[default_symbol].slice(0,250*11);
-    const default_series = weekly_summary_spy;
-    console.log('benchmark', benchmark[default_symbol]);
-    console.log('daily_returns', daily_summary_spy);
-    console.log('weekly_returns', weekly_summary_spy);
-
+    const bets = await Promise.all(bets_settings.map(bet_from));
     // generate more backtests
-
-
     const backtests = new Array(1000).fill(0).map(v => {
-      const result = generate_sample_backtest([
-        {
-          series: default_series,
-          current_price: default_current_price,
-          option_type: default_option_type,
-          bet_size: (index) => { // can lookup features by index
-            return Number(settings.bet_size);
-          }
-        }
-      ]);
+      const result = generate_sample_backtest(bets);
       const backtest = result.backtest;
       // console.log('backtest', backtest)
       return backtest;
