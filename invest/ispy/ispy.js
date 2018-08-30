@@ -4,7 +4,7 @@ define([
   'invest/create_universe_fs', 'invest/create_universe_rh','invest/universe_to_pct_change',
   'invest/append_line_graph', 'invest/sharpe_ratio', 'invest/sortino_ratio',
   './generate_sample_backtest',
-  './printing_output'
+  './print'
 ],
   (
     tf,serializeJSON,rxjs, rh,pct_change,$,mean,stdev,
@@ -23,8 +23,8 @@ console.log('rx',rxjs)
 // multiplicative, average, additive
 // power, normal, erlang
   return () => {
-
-/*
+    // get up to date pricing for options
+    /*
     $.ajax({
       url: '/data/spy-option-chain.json'
     }).then(response => {
@@ -44,12 +44,12 @@ console.log('rx',rxjs)
         bet_size: 0.015,
         underlying: {
           symbol: 'SPY',
-          price: 289.78,
+          price: 291.48,
         },
         option: {
-          days_to_expiration: 4,
-          strike: 288,
-          price: -.41,
+          days_to_expiration: 6,
+          strike: 293,
+          price: 0.79,
         }
     }),
       rxjs.operators.tap((settings) => {
@@ -83,6 +83,16 @@ console.log('rx',rxjs)
       const update = $('.settings').serializeJSON();
       settings.next(update);
     });
+
+    (async function() {
+      const settings = {};
+      run_backtest(settings);
+      const backtests = await run_backtest(settings);
+      print.print_summary(`.explore .summary`, backtests);
+      print.append_simulation(`.explore .simulation`, backtests);
+      console.log('EXPLORE');
+      print.print_details(backtests);
+    })
   };
 
   async function run_backtest(settings) {
