@@ -17,26 +17,19 @@ define([
   }
   // simple random sample test
 
-  function generate_sample_backtest(
-    default_series,
-    default_symbol,
-    default_current_price,
-    default_option_type,
-    default_bet_size,
-    days_to_expiration
-  ) {
-    const calculated_returns = generate_scatter_backtest(default_series.length)
-      .map(sample_index => { // calculate params
-        const option_type = default_option_type;
-        const bet_size = default_bet_size;
-
-        return [{
-          sample_index,
-          option_type,
-          bet_size,
-          series: default_series,
-          current_price: default_current_price
-        }];
+  function generate_sample_backtest(types_of_bets) {
+    const max_series_length = Math.min.apply(undefined,(types_of_bets.map(bet => bet.series.length)));
+    const calculated_returns = generate_scatter_backtest(max_series_length)
+      .map(sample_index => { // calculate params for each index w/ features
+        return types_of_bets.map(security => {
+          return {
+            sample_index,
+            series: security.series,
+            current_price: Number(security.current_price),
+            bet_size: security.bet_size(sample_index),
+            option_type: security.option_type.map(val => Number(val))
+          };
+        });
       })
       .map(calculate_returns);
 
@@ -57,7 +50,7 @@ define([
       const sample_return = params.series[sample_index];
       const current_price = params.current_price;
       const calculated_return = option_profit(current_price, sample_return, strike, price);
-      
+
       return {
         calculated_return,
         bet_size

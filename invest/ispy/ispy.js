@@ -39,7 +39,7 @@ console.log('rx',rxjs)
     const settings = new rxjs.Subject();
     settings.pipe(
       rxjs.operators.startWith({
-        bet_size: 0.02,
+        bet_size: 0.015,
         underlying: {
           symbol: 'SPY',
           price: 289.78,
@@ -81,40 +81,6 @@ console.log('rx',rxjs)
       const update = $('.settings').serializeJSON();
       settings.next(update);
     });
-
-    const watchlist = [
-      {
-        bet_size: 0.02,
-        underlying: {
-          symbol: 'SPY',
-          price: 290.04,
-        },
-        option: {
-          days_to_expiration: 4,
-          strike: 290.5,
-          price: .84,
-        }
-      },
-      {
-        bet_size: 0.02,
-        underlying: {
-          symbol: 'XLK',
-          price: 74.96,
-        },
-        option: {
-          days_to_expiration: 7,
-          strike: 75.5,
-          price: .31,
-        }
-      }
-    ].forEach(async (settings) => {
-      return;
-      const backtests = await run_backtest(settings);
-      print_summary(`.${settings.underlying.symbol.toLowerCase()} .summary`, backtests);
-      console.log(settings.underlying.symbol);
-      print_details(backtests);
-    });
-
   };
 
   async function run_backtest(settings) {
@@ -141,14 +107,17 @@ console.log('rx',rxjs)
     // generate more backtests
 
 
-    const backtests = new Array(10000).fill(0).map(v => {
-      const result = generate_sample_backtest(default_series,
-      default_symbol,
-      default_current_price,
-      default_option_type,
-      default_bet_size,
-      days_to_expiration
-    );
+    const backtests = new Array(1000).fill(0).map(v => {
+      const result = generate_sample_backtest([
+        {
+          series: default_series,
+          current_price: default_current_price,
+          option_type: default_option_type,
+          bet_size: (index) => { // can lookup features by index
+            return Number(settings.bet_size);
+          }
+        }
+      ]);
       const backtest = result.backtest;
       // console.log('backtest', backtest)
       return backtest;
