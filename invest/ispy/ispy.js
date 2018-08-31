@@ -41,17 +41,17 @@ console.log('rx',rxjs)
     const settings = new rxjs.Subject();
     settings.pipe(
       rxjs.operators.startWith({
-        bet_size: 0.015,
+        bet_size: 0.03,
         underlying: {
           symbol: 'SPY',
-          price: 291.48,
+          price: 290.88,
         },
         option: {
-          days_to_expiration: 6,
-          strike: 293,
-          price: 0.79,
+          days_to_expiration: 5,
+          strike: 292,
+          price: 0.9,
         }
-    }),
+      }),
       rxjs.operators.tap((settings) => {
         console.log('tap settings', settings);
         $('.settings .bet_size .current').html(settings.bet_size);
@@ -85,34 +85,116 @@ console.log('rx',rxjs)
     });
 
     (async function() {
-      const backtests = await run_backtest([
+      const bets = [
+        // {
+        //   bet_size: 0.005,
+        //   underlying: {
+        //     symbol: 'SPY',
+        //     price: 290.855,
+        //   },
+        //   option: {
+        //     days_to_expiration: 5,
+        //     strike: 289.5,
+        //     price: -0.88,
+        //   }
+        // },
         {
-          bet_size: 0.015,
+          bet_size: 0.005,
           underlying: {
             symbol: 'SPY',
-            price: 291.48,
+            price: 290.88,
           },
           option: {
-            days_to_expiration: 6,
-            strike: 293,
-            price: 0.79,
+            days_to_expiration: 5,
+            strike: 292,
+            price: 0.9,
           }
         }, {
-          bet_size: 0.015,
+          bet_size: 0.005,
           underlying: {
-            symbol: 'SPY',
-            price: 291.48,
+            symbol: 'XLI',
+            price: 77.05,
           },
           option: {
-            days_to_expiration: 6,
-            strike: 293,
-            price: 0.79,
+            days_to_expiration: 5,
+            strike: 78,
+            price: 0.22,
           }
-      }]);
+        }, {
+          bet_size: 0.005,
+          underlying: {
+            symbol: 'XLP',
+            price: 53.8,
+          },
+          option: {
+            days_to_expiration: 5,
+            strike: 54,
+            price: 0.23,
+          }
+        }, {
+          bet_size: 0.005,
+          underlying: {
+            symbol: 'XLY',
+            price: 116.49,
+          },
+          option: {
+            days_to_expiration: 5,
+            strike: 117.5,
+            price: 0.37,
+          }
+        }, {
+          bet_size: 0.005,
+          underlying: {
+            symbol: 'XLV',
+            price: 92.8,
+          },
+          option: {
+            days_to_expiration: 5,
+            strike: 93.5,
+            price: 0.22,
+          }
+        }, {
+          bet_size: 0.005,
+          underlying: {
+            symbol: 'XLE',
+            price: 75.02,
+          },
+          option: {
+            days_to_expiration: 5,
+            strike: 76,
+            price: 0.23,
+          }
+        }, {
+          bet_size: 0.005,
+          underlying: {
+            symbol: 'XLK',
+            price: 75.81,
+          },
+          option: {
+            days_to_expiration: 5,
+            strike: 76,
+            price: 0.46,
+          }
+        }, {
+          bet_size: 0.005,
+          underlying: {
+            symbol: 'XLF',
+            price: 28.435,
+          },
+          option: {
+            days_to_expiration: 5,
+            strike: 28.5,
+            price: 0.19,
+          }
+        }];
+        bets.map(val => {
+          val.bet_size = .04 / bets.length;
+          return val;
+        })
+      const backtests = await run_backtest(bets);
       console.log('Portfolio');
       print.print_summary(`.portfolio .summary`, backtests);
       print.append_simulation(`.portfolio .simulation`, backtests);
-
       print.print_details(backtests);
     })();
   };
@@ -140,7 +222,7 @@ console.log('rx',rxjs)
     console.log('ispy', arguments)
     const bets = await Promise.all(bets_settings.map(bet_from));
     // generate more backtests
-    const backtests = new Array(1000).fill(0).map(v => {
+    const backtests = new Array(10000).fill(0).map(v => {
       const result = generate_sample_backtest(bets);
       const backtest = result.backtest;
       // console.log('backtest', backtest)
