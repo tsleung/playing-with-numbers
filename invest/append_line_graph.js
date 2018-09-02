@@ -6,7 +6,7 @@ define(['d3'], function(d3) {
     const append_target = params.append_target || 'body';
     // set the dimensions and margins of the graph
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
-        width = 660 - margin.left - margin.right,
+        width = 600 - margin.left - margin.right,
         height = 300 - margin.top - margin.bottom;
 
     // set the ranges
@@ -38,7 +38,6 @@ define(['d3'], function(d3) {
       //   d3.max(data, function(d) { return d.strike; })
       // ]);
       x.domain(d3.extent(data, function(d) { return d.independent; }));
-
       y.domain(y_range);
 
       /*

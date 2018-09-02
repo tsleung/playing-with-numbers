@@ -15,8 +15,8 @@ define([
     append_simulation
   }
 
-  function print_summary(append_target, backtests) {
-
+  function print_summary(append_target, tests) {
+    const backtests = tests.map(test=>test.backtest);
     const results = backtests.map(backtest => {
       return pct_change(backtest[0], backtest[backtest.length -1]);
     });
@@ -45,8 +45,13 @@ define([
     summary(results, 'results');
   }
 
-  function print_details(backtests) {
-
+  function print_details(tests) {
+    const backtests = tests.map(test=>test.backtest);
+    const single_period_returns = tests
+      .filter((val, i) => Math.random() < .2) // don't take every test
+      .map(test => test.calculated_returns.map(bets => mean(bets.map(bet=>bet.calculated_return))))
+      .reduce((accum, val) => accum.concat(val),[])
+      .sort((a,b) => a-b);
     const sharpe = backtests.map(backtest => {
       return sharpe_ratio(backtest);
     }).sort();
@@ -77,12 +82,15 @@ define([
 
 
     //console.log('backtests', backtests);
+    summary(single_period_returns, 'single_period_returns');
     summary(mean_drawdown, 'mean_drawdown');
     summary(max_drawdown, 'max_drawdown');
     summary(sharpe, 'sharpe');
   }
 
-  function append_simulation(append_target, backtests) {
+  function append_simulation(append_target, tests) {
+    const backtests = tests.map(test=>test.backtest);
+
     // graph sample of results, sorted worse to best
     backtests.filter((backtest, i) => {
         return (i % 500) == 0;
@@ -109,9 +117,13 @@ define([
     console.log('mean', mean(results))
     console.log('stdev', stdev(results))
     console.log('.10', results[Math.round(results.length*.10)])
-    console.log('.25', results[Math.round(results.length*.25)])
+    console.log('.20', results[Math.round(results.length*.2)])
+    console.log('.20', results[Math.round(results.length*.3)])
+    console.log('.40', results[Math.round(results.length*.4)])
     console.log('.50', results[Math.round(results.length*.5)])
-    console.log('.75', results[Math.round(results.length*.75)])
+    console.log('.60', results[Math.round(results.length*.6)])
+    console.log('.70', results[Math.round(results.length*.7)])
+    console.log('.80', results[Math.round(results.length*.8)])
     console.log('.90', results[Math.round(results.length*.9)])
   }
 })

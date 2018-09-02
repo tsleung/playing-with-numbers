@@ -19,7 +19,7 @@ define([
 
   function generate_sample_backtest(types_of_bets) {
     const max_series_length = Math.min.apply(undefined,(types_of_bets.map(bet => bet.series.length)));
-    const calculated_returns = generate_scatter_backtest(max_series_length)
+    const period_returns = generate_scatter_backtest(max_series_length)
       .map(sample_index => { // calculate params for each index w/ features
         return types_of_bets.map(security => {
           return {
@@ -31,7 +31,7 @@ define([
           };
         });
       })
-      .map(calculate_returns);
+    const calculated_returns = period_returns.map(calculate_returns);
 
     const backtest = evaluate_backtest(calculated_returns);
 

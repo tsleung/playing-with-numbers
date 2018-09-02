@@ -71,11 +71,11 @@ console.log('rx',rxjs)
       $('.explore .simulation').empty();
 
       // run_backtest([settings]);
-      const backtests = await run_backtest([settings]);
-      console.log('EXPLORE');
-      print.print_summary(`.explore .summary`, backtests);
-      print.append_simulation(`.explore .simulation`, backtests);
-      print.print_details(backtests);
+      const tests = await run_backtest([settings]);
+      console.log('EXPLORE',tests);
+      print.print_summary(`.explore .summary`, tests);
+      print.append_simulation(`.explore .simulation`, tests);
+      print.print_details(tests);
 
     });
 
@@ -188,14 +188,14 @@ console.log('rx',rxjs)
           }
         }];
         bets.map(val => {
-          val.bet_size = .04 / bets.length;
+          val.bet_size = .03 / bets.length;
           return val;
         })
-      const backtests = await run_backtest(bets);
-      console.log('Portfolio');
-      print.print_summary(`.portfolio .summary`, backtests);
-      print.append_simulation(`.portfolio .simulation`, backtests);
-      print.print_details(backtests);
+      const tests = await run_backtest(bets);
+      console.log('Portfolio',tests);
+      print.print_summary(`.portfolio .summary`, tests);
+      print.append_simulation(`.portfolio .simulation`, tests);
+      print.print_details(tests);
     })();
   };
 
@@ -222,19 +222,20 @@ console.log('rx',rxjs)
     console.log('ispy', arguments)
     const bets = await Promise.all(bets_settings.map(bet_from));
     // generate more backtests
-    const backtests = new Array(10000).fill(0).map(v => {
-      const result = generate_sample_backtest(bets);
-      const backtest = result.backtest;
+    const tests = new Array(10000).fill(0).map(v => {
+      const test = generate_sample_backtest(bets);
       // console.log('backtest', backtest)
-      return backtest;
-    }).filter(val => {
-      return !isNaN(val[val.length -1]);
-    }).sort((a, b) => {
+      return test;
+    }).filter(test => {
+      return !isNaN(test.backtest[test.backtest.length -1]);
+    }).sort((testA, testB) => {
+      const a = testA.backtest;
+      const b = testB.backtest
       const difference = pct_change(a[0],a[a.length -1]) - pct_change(b[0],b[b.length -1]);
       return difference;
     });
 
-    return backtests;
+    return tests;
   };
 
 });
