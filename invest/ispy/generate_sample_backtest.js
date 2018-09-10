@@ -49,7 +49,8 @@ define([
       const price = params.option_type[1];
       const sample_return = params.series[sample_index];
       const current_price = params.current_price;
-      const calculated_return = option_profit(current_price, sample_return, strike, price);
+      // can't lose more than 100% on option
+      const calculated_return = Math.max(-1,option_profit(current_price, sample_return, strike, price));
 
       return {
         calculated_return,

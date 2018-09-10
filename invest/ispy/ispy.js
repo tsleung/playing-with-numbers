@@ -1,17 +1,17 @@
 define([
   'tf','serializeJSON','rxjs','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
-  'utils/sum','utils/nominal_to_percent_change',
+  'utils/sum','utils/nominal_to_percent_change','utils/laplace_rule',
   'invest/create_universe_fs', 'invest/create_universe_rh','invest/universe_to_pct_change',
   'invest/append_line_graph', 'invest/sharpe_ratio', 'invest/sortino_ratio',
-  './generate_sample_backtest',
+  './generate_sample_backtest', './portfolio_bets',
   './print'
 ],
   (
     tf,serializeJSON,rxjs, rh,pct_change,$,mean,stdev,
-    sum, nominal_to_percent_change,
+    sum, nominal_to_percent_change,laplace,
     create_close_universe_fs, create_close_universe_rh,universe_to_pct_change,
     append_line_graph, sharpe_ratio, sortino_ratio,
-    generate_sample_backtest,
+    generate_sample_backtest,portfolio_bets,
     print,
   ) => {
 console.log('rx',rxjs)
@@ -40,18 +40,20 @@ console.log('rx',rxjs)
     */
     const settings = new rxjs.Subject();
     settings.pipe(
-      rxjs.operators.startWith({
-        bet_size: 0.03,
-        underlying: {
-          symbol: 'SPY',
-          price: 290.88,
-        },
-        option: {
-          days_to_expiration: 5,
-          strike: 292,
-          price: 0.9,
+      rxjs.operators.startWith(
+        {
+          bet_size: 0.02,
+          underlying: {
+            symbol: 'SPY',
+            price: 290.31,
+          },
+          option: {
+            days_to_expiration: 4,
+            strike: 292,
+            price: 0.66,
+          }
         }
-      }),
+      ),
       rxjs.operators.tap((settings) => {
         console.log('tap settings', settings);
         $('.settings .bet_size .current').html(settings.bet_size);
@@ -62,7 +64,7 @@ console.log('rx',rxjs)
         $('.settings [name="option[strike]"]').val(settings.option.strike);
         $('.settings [name="option[price]"]').val(settings.option.price);
       }),
-      rxjs.operators.throttleTime(1000, undefined,{leading: true, trailing: true}),
+      rxjs.operators.throttleTime(1000, undefined,{leading: false, trailing: true}),
       rxjs.operators.distinctUntilChanged()
     )
     .subscribe(async (settings) => {
@@ -80,118 +82,20 @@ console.log('rx',rxjs)
     });
 
     $('.settings').on('change input', (e) => {
+      onSettingsUpdate();
+    });
+    function onSettingsUpdate() {
       const update = $('.settings').serializeJSON();
       settings.next(update);
-    });
+    }
 
+    onSettingsUpdate();
     (async function() {
-      const bets = [
-        // {
-        //   bet_size: 0.005,
-        //   underlying: {
-        //     symbol: 'SPY',
-        //     price: 290.855,
-        //   },
-        //   option: {
-        //     days_to_expiration: 5,
-        //     strike: 289.5,
-        //     price: -0.88,
-        //   }
-        // },
-        {
-          bet_size: 0.005,
-          underlying: {
-            symbol: 'SPY',
-            price: 290.88,
-          },
-          option: {
-            days_to_expiration: 5,
-            strike: 292,
-            price: 0.9,
-          }
-        }, {
-          bet_size: 0.005,
-          underlying: {
-            symbol: 'XLI',
-            price: 77.05,
-          },
-          option: {
-            days_to_expiration: 5,
-            strike: 78,
-            price: 0.22,
-          }
-        }, {
-          bet_size: 0.005,
-          underlying: {
-            symbol: 'XLP',
-            price: 53.8,
-          },
-          option: {
-            days_to_expiration: 5,
-            strike: 54,
-            price: 0.23,
-          }
-        }, {
-          bet_size: 0.005,
-          underlying: {
-            symbol: 'XLY',
-            price: 116.49,
-          },
-          option: {
-            days_to_expiration: 5,
-            strike: 117.5,
-            price: 0.37,
-          }
-        }, {
-          bet_size: 0.005,
-          underlying: {
-            symbol: 'XLV',
-            price: 92.8,
-          },
-          option: {
-            days_to_expiration: 5,
-            strike: 93.5,
-            price: 0.22,
-          }
-        }, {
-          bet_size: 0.005,
-          underlying: {
-            symbol: 'XLE',
-            price: 75.02,
-          },
-          option: {
-            days_to_expiration: 5,
-            strike: 76,
-            price: 0.23,
-          }
-        }, {
-          bet_size: 0.005,
-          underlying: {
-            symbol: 'XLK',
-            price: 75.81,
-          },
-          option: {
-            days_to_expiration: 5,
-            strike: 76,
-            price: 0.46,
-          }
-        }, {
-          bet_size: 0.005,
-          underlying: {
-            symbol: 'XLF',
-            price: 28.435,
-          },
-          option: {
-            days_to_expiration: 5,
-            strike: 28.5,
-            price: 0.19,
-          }
-        }];
-        bets.map(val => {
-          val.bet_size = .03 / bets.length;
-          return val;
-        })
-      const tests = await run_backtest(bets);
+      portfolio_bets.map(val => {
+        val.bet_size = .02 / portfolio_bets.length;
+        return val;
+      })
+      const tests = await run_backtest(portfolio_bets);
       console.log('Portfolio',tests);
       print.print_summary(`.portfolio .summary`, tests);
       print.append_simulation(`.portfolio .simulation`, tests);
@@ -204,7 +108,7 @@ console.log('rx',rxjs)
     const series = universe_to_pct_change(
       universe,
       Number(settings.option.days_to_expiration)
-    )[settings.underlying.symbol].slice(0,250*11);
+    )[settings.underlying.symbol].slice(0,250*3);
 
     return {
       series: series,
@@ -239,10 +143,3 @@ console.log('rx',rxjs)
   };
 
 });
-/*
-Rules to train agent
-Max drawdown and drawdown are no different
-Punish deviation from mean negative, not positive
-Mean vs median return?
-
-*/

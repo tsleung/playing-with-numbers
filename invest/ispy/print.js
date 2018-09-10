@@ -10,6 +10,7 @@ define([
   ) => {
 
   return {
+    summary,
     print_details,
     print_summary,
     append_simulation
@@ -41,15 +42,15 @@ define([
       append_target
     });
 
-    console.log('results', results);
+    // console.log('results', results);
     summary(results, 'results');
   }
 
   function print_details(tests) {
     const backtests = tests.map(test=>test.backtest);
     const single_period_returns = tests
-      .filter((val, i) => Math.random() < .2) // don't take every test
-      .map(test => test.calculated_returns.map(bets => mean(bets.map(bet=>bet.calculated_return))))
+      .filter((val, i) => Math.random() < .05) // don't take every test
+      .map(test => test.calculated_returns.map(bets => mean(bets.map(bet=>Math.max(-1,bet.calculated_return)))))
       .reduce((accum, val) => accum.concat(val),[])
       .sort((a,b) => a-b);
     const sharpe = backtests.map(backtest => {
@@ -116,14 +117,9 @@ define([
     console.log(name.toUpperCase())
     console.log('mean', mean(results))
     console.log('stdev', stdev(results))
-    console.log('.10', results[Math.round(results.length*.10)])
-    console.log('.20', results[Math.round(results.length*.2)])
-    console.log('.20', results[Math.round(results.length*.3)])
-    console.log('.40', results[Math.round(results.length*.4)])
-    console.log('.50', results[Math.round(results.length*.5)])
-    console.log('.60', results[Math.round(results.length*.6)])
-    console.log('.70', results[Math.round(results.length*.7)])
-    console.log('.80', results[Math.round(results.length*.8)])
-    console.log('.90', results[Math.round(results.length*.9)])
+    const output = [.1,.25,.4,.45,.5,.55,.6,.75,.90].map(percentile => {
+      console.log(''+percentile, results[Math.round(results.length*percentile)])
+    });
+
   }
 })
