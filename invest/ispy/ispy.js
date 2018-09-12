@@ -3,7 +3,7 @@ define([
   'utils/sum','utils/nominal_to_percent_change','utils/laplace_rule',
   'invest/create_universe_fs', 'invest/create_universe_rh','invest/universe_to_pct_change',
   'invest/append_line_graph', 'invest/sharpe_ratio', 'invest/sortino_ratio',
-  './generate_sample_backtest', './portfolio_bets',
+  './generate_sample_backtest', './portfolio_bets', './option_chain_fetcher',
   './print'
 ],
   (
@@ -11,7 +11,7 @@ define([
     sum, nominal_to_percent_change,laplace,
     create_close_universe_fs, create_close_universe_rh,universe_to_pct_change,
     append_line_graph, sharpe_ratio, sortino_ratio,
-    generate_sample_backtest,portfolio_bets,
+    generate_sample_backtest,portfolio_bets,option_chain_fetcher,
     print,
   ) => {
 console.log('rx',rxjs)
@@ -23,21 +23,10 @@ console.log('rx',rxjs)
 // multiplicative, average, additive
 // power, normal, erlang
   return () => {
-    // get up to date pricing for options
-    /*
-    $.ajax({
-      url: '/data/spy-option-chain.json'
-    }).then(response => {
-      console.log('options', response)
-      return Promise.all(response.optionChain.result[0].expirationDates.slice(0,10).map(expiration_date => {
-        return $.ajax({
-          url: `https://query2.finance.yahoo.com/v7/finance/options/spy?date=${expiration_date}`
-        })
-      }));
-    }).then(response => {
-      console.log('options', response)
-    });
-    */
+    // should backtest during days which VIX was at similar levels, then following periods
+    // need to check if this is a correct selection strategy e.g. VIX prediction?
+    option_chain_fetcher('spy')
+
     const settings = new rxjs.Subject();
     settings.pipe(
       rxjs.operators.startWith(
@@ -89,7 +78,7 @@ console.log('rx',rxjs)
       settings.next(update);
     }
 
-    onSettingsUpdate();
+    // onSettingsUpdate();
     (async function() {
       portfolio_bets.map(val => {
         val.bet_size = .02 / portfolio_bets.length;
@@ -100,7 +89,8 @@ console.log('rx',rxjs)
       print.print_summary(`.portfolio .summary`, tests);
       print.append_simulation(`.portfolio .simulation`, tests);
       print.print_details(tests);
-    })();
+    // })();
+    });
   };
 
   async function bet_from(settings) {
