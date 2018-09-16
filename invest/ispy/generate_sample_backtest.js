@@ -10,35 +10,59 @@ define([
     create_close_universe_fs, create_close_universe_rh,universe_to_pct_change,
     append_line_graph, sharpe_ratio, sortino_ratio
   ) => {
-  return generate_sample_backtest;
+
+  return {
+    simple_random_backtest,
+  };
 
   function option_profit(current, expected_pct_change, option_strike, option_price) {
     return (current+(current*expected_pct_change) - (option_strike + option_price)) / option_price;
   }
-  // simple random sample test
 
-  function generate_sample_backtest(types_of_bets) {
-    const max_series_length = Math.min.apply(undefined,(types_of_bets.map(bet => bet.series.length)));
-    const period_returns = generate_scatter_backtest(max_series_length)
+  function determine_max_series_length(types_of_bets) {
+    return Math.min.apply(undefined,(types_of_bets.map(bet => bet.series.length)));
+  }
+
+  // simple random sample test
+  function simple_random_backtest(types_of_bets, options) {
+    const max_series_length = determine_max_series_length(types_of_bets);
+    options = Object.assign({}, options, {
+      periods: 50
+    });
+
+    const period_returns = generate_scatter_backtest(max_series_length, 50) // 50 periods
       .map(sample_index => { // calculate params for each index w/ features
         return types_of_bets.map(security => {
-          return {
-            sample_index,
-            series: security.series,
-            current_price: Number(security.current_price),
-            bet_size: security.bet_size(sample_index),
-            option_type: security.option_type.map(val => Number(val))
-          };
+          const series = security.series;
+          const current_price = Number(security.current_price);
+          const option_type = security.option_type.map(val => Number(val));
+
+          return security.bet_size(sample_index).then(bet_size => {
+            return {
+              bet_size,
+              sample_index,
+              series,
+              current_price,
+              option_type,
+            };
+          });
         });
-      })
-    const calculated_returns = period_returns.map(calculate_returns);
+      });
 
-    const backtest = evaluate_backtest(calculated_returns);
+    const calculated_returns = period_returns.map(period_returns => {
+      // if our parameters are a promise due to the bet, we wait
+      return Promise.all(period_returns).then(period_returns => calculate_returns(period_returns));
+    });
 
-    return {
-      calculated_returns,
-      backtest
-    };
+
+    const backtest = Promise.all(calculated_returns)
+      .then(calculated_returns => evaluate_backtest(calculated_returns));
+
+    return Promise.all([calculated_returns, backtest])
+      .then(args => ({
+      calculated_returns: args[0],
+      backtest: args[1]
+    }));
   }
 
   function calculate_returns(params_arr) { // calculate return
@@ -79,9 +103,9 @@ define([
   }
 });
 
-function generate_scatter_backtest(range) {
+function generate_scatter_backtest(range, periods) {
   const index_pool = range;
-  return new Array(1 * 50)
+  return new Array(1 * periods)
   // const calculated_returns = new Array(index_pool)
     .fill(index_pool)
     .map((index_pool, i) => {
@@ -89,4 +113,7 @@ function generate_scatter_backtest(range) {
       // const sample_index = i;
       return sample_index;
     })
+    // sort so we don't have lookahead bias when training, largest -> smallest
+    .sort((a,b) => b - a);
+
 }

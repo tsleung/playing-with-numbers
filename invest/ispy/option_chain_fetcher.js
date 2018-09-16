@@ -80,9 +80,13 @@ define([], function() {
         const expiration = from_yahoo_finance_time(option.expiration);
         const trading_days = getBusinessDatesCount(new Date(), expiration);
         const breakeven_return = pct_change(regular_market_price, strike + last_price);
+        // efective leverage, if the price moved 1%, equity would move 1%
+        // with a 1% move, what does our option move?
+        //const effective_leverage_after_breakeven = ((regular_market_price * 1.01) - (strike+last_price)) / last_price;
         return {
           expiration,
           breakeven_return,
+          //effective_leverage_after_breakeven,
           strike,
           last_price,
           regular_market_price,
@@ -93,6 +97,7 @@ define([], function() {
         };
       };
       const calls = resp.calls.filter(withinTenPercentStrike).map(toExpectedReturn);
+      // console.table(calls)
       const puts = resp.puts.filter(withinTenPercentStrike).map(toExpectedReturn)
       return {calls,puts};
     });

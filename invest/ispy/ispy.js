@@ -25,7 +25,13 @@ console.log('rx',rxjs)
   return () => {
     // should backtest during days which VIX was at similar levels, then following periods
     // need to check if this is a correct selection strategy e.g. VIX prediction?
-    option_chain_fetcher('spy')
+
+    option_chain_fetcher('spy').then(resp => {
+      console.log('respojnse', resp);
+      run_backtest(portfolio_bets)
+
+      // for each option we need to run a back test given performance characteristics
+    })
 
     const settings = new rxjs.Subject();
     settings.pipe(
@@ -78,7 +84,7 @@ console.log('rx',rxjs)
       settings.next(update);
     }
 
-    // onSettingsUpdate();
+    onSettingsUpdate();
     (async function() {
       portfolio_bets.map(val => {
         val.bet_size = .02 / portfolio_bets.length;
@@ -98,7 +104,7 @@ console.log('rx',rxjs)
     const series = universe_to_pct_change(
       universe,
       Number(settings.option.days_to_expiration)
-    )[settings.underlying.symbol].slice(0,250*3);
+    )[settings.underlying.symbol].slice(0,250*4);
 
     return {
       series: series,
@@ -107,7 +113,7 @@ console.log('rx',rxjs)
         Number(settings.option.strike), Number(settings.option.price)
       ],
       bet_size: (index) => { // can lookup features by index
-        return Number(settings.bet_size);
+        return Promise.resolve(Number(settings.bet_size));
       }
     };
   }
@@ -116,20 +122,23 @@ console.log('rx',rxjs)
     console.log('ispy', arguments)
     const bets = await Promise.all(bets_settings.map(bet_from));
     // generate more backtests
-    const tests = new Array(10000).fill(0).map(v => {
-      const test = generate_sample_backtest(bets);
+    const tests = new Array(10).fill(0).map(v => {
+      const test = generate_sample_backtest.simple_random_backtest(bets);
       // console.log('backtest', backtest)
       return test;
-    }).filter(test => {
-      return !isNaN(test.backtest[test.backtest.length -1]);
-    }).sort((testA, testB) => {
-      const a = testA.backtest;
-      const b = testB.backtest
-      const difference = pct_change(a[0],a[a.length -1]) - pct_change(b[0],b[b.length -1]);
-      return difference;
     });
 
-    return tests;
+    return Promise.all(tests).then(tests => {
+      return tests.filter(test => {
+        return !isNaN(test.backtest[test.backtest.length -1]);
+      }).sort((testA, testB) => {
+        const a = testA.backtest;
+        const b = testB.backtest
+        const difference = pct_change(a[0],a[a.length -1]) - pct_change(b[0],b[b.length -1]);
+        return difference;
+      });
+
+    });
   };
 
 });
