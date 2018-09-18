@@ -122,7 +122,7 @@ console.log('rx',rxjs)
     console.log('ispy', arguments)
     const bets = await Promise.all(bets_settings.map(bet_from));
     // generate more backtests
-    const tests = new Array(10).fill(0).map(v => {
+    const tests = new Array(2000).fill(0).map(v => {
       const test = generate_sample_backtest.simple_random_backtest(bets);
       // console.log('backtest', backtest)
       return test;

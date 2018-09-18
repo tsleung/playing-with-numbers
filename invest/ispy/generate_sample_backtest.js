@@ -58,11 +58,13 @@ define([
     const backtest = Promise.all(calculated_returns)
       .then(calculated_returns => evaluate_backtest(calculated_returns));
 
-    return Promise.all([calculated_returns, backtest])
-      .then(args => ({
-      calculated_returns: args[0],
-      backtest: args[1]
-    }));
+
+    return Promise.all([Promise.all(calculated_returns), backtest]).then(args => {
+      return {
+        calculated_returns: args[0],
+        backtest: args[1],
+      };
+    });
   }
 
   function calculate_returns(params_arr) { // calculate return
