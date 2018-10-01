@@ -31,7 +31,9 @@ console.log('rx',rxjs)
       run_backtest(portfolio_bets)
 
       // for each option we need to run a back test given performance characteristics
-    })
+    }).catch(err => {
+      console.log('disable cors check', err)
+    });
 
     const settings = new rxjs.Subject();
     settings.pipe(
@@ -40,12 +42,12 @@ console.log('rx',rxjs)
           bet_size: 0.02,
           underlying: {
             symbol: 'SPY',
-            price: 290.31,
+            price: 293.33,
           },
           option: {
-            days_to_expiration: 4,
-            strike: 292,
-            price: 0.66,
+            days_to_expiration: 6,
+            strike: 294,
+            price: 0.67,
           }
         }
       ),
@@ -59,7 +61,7 @@ console.log('rx',rxjs)
         $('.settings [name="option[strike]"]').val(settings.option.strike);
         $('.settings [name="option[price]"]').val(settings.option.price);
       }),
-      rxjs.operators.throttleTime(1000, undefined,{leading: false, trailing: true}),
+      rxjs.operators.debounceTime(2500, undefined,{leading: false, trailing: true}),
       rxjs.operators.distinctUntilChanged()
     )
     .subscribe(async (settings) => {
@@ -73,6 +75,7 @@ console.log('rx',rxjs)
       print.print_summary(`.explore .summary`, tests);
       print.append_simulation(`.explore .simulation`, tests);
       print.print_details(tests);
+      console.log('tests', tests)
 
     });
 
@@ -112,23 +115,51 @@ console.log('rx',rxjs)
       option_type: [
         Number(settings.option.strike), Number(settings.option.price)
       ],
+      // never negative look on index
       bet_size: (index) => { // can lookup features by index
-        return Promise.resolve(Number(settings.bet_size));
+        const default_bet_size = Number(settings.bet_size);
+        const explore = () => {
+          // behave irrationally and bet
+          return Promise.resolve(default_bet_size);
+        };
+        const greedy = () => {
+          // be smart about it with what we know
+          const last_day_pct_change = series[index];
+          const bet_size = last_day_pct_change > 0 ?
+            default_bet_size :
+            default_bet_size;
+          return Promise.resolve(bet_size);
+        };
+        const policy = Math.random() > .8 ?
+          explore :
+          greedy;
+
+        return policy();
       }
     };
   }
 
   async function run_backtest(bets_settings) {
-    console.log('ispy', arguments)
-    const bets = await Promise.all(bets_settings.map(bet_from));
-    // generate more backtests
-    const tests = new Array(2000).fill(0).map(v => {
-      const test = generate_sample_backtest.simple_random_backtest(bets);
-      // console.log('backtest', backtest)
-      return test;
-    });
-
-    return Promise.all(tests).then(tests => {
+    const num_backtests = 4000;
+    // skip promise all, negative performance?
+    return new Promise(async (resolve) => {
+      console.log('ispy', arguments)
+      const bets = await Promise.all(bets_settings.map(bet_from));
+      // generate more backtests
+      const tests = [];
+      new Array(num_backtests).fill(0).map(v => {
+        const test = generate_sample_backtest.simple_random_backtest(bets);
+        // console.log('backtest', backtest)
+        test.then((test) => {
+          tests.push(test);
+          if(num_backtests == tests.length) {
+            console.log('resolving',tests)
+            resolve(tests);
+          }
+        });
+        return test;
+      });
+    }).then(tests => {
       return tests.filter(test => {
         return !isNaN(test.backtest[test.backtest.length -1]);
       }).sort((testA, testB) => {

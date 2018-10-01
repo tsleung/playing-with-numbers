@@ -36,8 +36,7 @@ define([
           const series = security.series;
           const current_price = Number(security.current_price);
           const option_type = security.option_type.map(val => Number(val));
-
-          return security.bet_size(sample_index).then(bet_size => {
+          return security.bet_size(sample_index + 1).then(bet_size => {
             return {
               bet_size,
               sample_index,

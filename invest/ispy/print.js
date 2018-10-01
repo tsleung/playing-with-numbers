@@ -117,7 +117,7 @@ define([
     console.log(name.toUpperCase())
     console.log('mean', mean(results))
     console.log('stdev', stdev(results))
-    const output = [.1,.25,.4,.45,.5,.55,.6,.75,.90].map(percentile => {
+    const output = [.1,.25,.4,.45,.5,.55,.6,.65,.7,.75,.90].map(percentile => {
       console.log(''+percentile, results[Math.round(results.length*percentile)])
     });
 
