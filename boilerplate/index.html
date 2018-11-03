@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Prototype Boilerplate</title>
+  <script type="text/javascript" src="../libs/less.js"></script>
+  <script type="text/javascript" src="../libs/require.js"></script>
+</head>
+<body>
+
+<script type="text/javascript">
+    require.config({
+    shim : {
+        'jquery.serializeJSON' : {
+    	      deps : ['jquery'],
+            exports : 'jQuery.fn.serializeJSON'
+        },
+        'tf' : {
+            exports : 'tf'
+        }
+    },
+    paths: {
+        'utils': '../utils',
+        'rxjs': '../libs/rxjs',
+        'd3': '../libs/d3',
+        'jquery.serializeJSON':'../libs/jquery.serializejson',
+        tf: '../libs/tf',
+        jquery: '../libs/jquery',
+
+    }
+  });
+</script>
+<script>
+  require(['index'], (index) => index());
+</script>
+</body>
+</html>
