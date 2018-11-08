@@ -38,16 +38,40 @@ console.log('rx',rxjs)
     const settings = new rxjs.Subject();
     settings.pipe(
       rxjs.operators.startWith(
+        // {
+        //   bet_size: 0.02,
+        //   underlying: {
+        //     symbol: 'SPY',
+        //     price: 293.33,
+        //   },
+        //   option: {
+        //     days_to_expiration: 6,
+        //     strike: 294,
+        //     price: 0.67,
+        //   }
+        // }
+        // {
+        //   bet_size: 0.02,
+        //   underlying: {
+        //     symbol: 'SPY',
+        //     price: 276.55,
+        //   },
+        //   option: {
+        //     days_to_expiration: 4,
+        //     strike: 277,
+        //     price: 1.54,
+        //   }
+        // }
         {
           bet_size: 0.02,
           underlying: {
             symbol: 'SPY',
-            price: 293.33,
+            price: 280.96,
           },
           option: {
-            days_to_expiration: 6,
-            strike: 294,
-            price: 0.67,
+            days_to_expiration: 5,
+            strike: 282,
+            price: 1.83,
           }
         }
       ),
@@ -104,6 +128,7 @@ console.log('rx',rxjs)
 
   async function bet_from(settings) {
     const universe = await create_close_universe_fs([settings.underlying.symbol]);
+    console.log('universe', universe)
     const series = universe_to_pct_change(
       universe,
       Number(settings.option.days_to_expiration)

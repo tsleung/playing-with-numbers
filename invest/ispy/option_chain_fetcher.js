@@ -1,4 +1,4 @@
-define([], function() {
+define(['utils/pct_change'], function(pct_change) {
   const cache = {};
   return (symbol, options) => {
     cache[symbol] = cache[symbol] || fetch_option_chain(symbol, options);
@@ -19,7 +19,7 @@ define([], function() {
       details.then(detail => detail.optionChain.result[0].quote.regularMarketPrice),
       // iterate through expiration dates and fetch quotes
       details.then(response => {
-        console.log(response.optionChain.result[0].expirationDates.map(date => from_yahoo_finance_time(date)));
+        // console.log(response.optionChain.result[0].expirationDates.map(date => from_yahoo_finance_time(date)));
         return Promise.all(response.optionChain.result[0].expirationDates.slice(0,10).map(expiration_date => {
           return $.ajax({
             url: `https://query2.finance.yahoo.com/v7/finance/options/${symbol}?date=${expiration_date}`
@@ -66,10 +66,11 @@ define([], function() {
       const regular_market_price = resp.regularMarketPrice;
       const withinTenPercentStrike = (option) => {
         // every X minutes, within P%
-        return Math.abs(pct_change(regular_market_price, option.strike)) < .2 &&
-          option.volume > 50 &&
-          // (option.bid != 0 && option.ask != 0) &&
-          true;
+        // console.log(regular_market_price,option.strike,Math.abs(pct_change(regular_market_price, option.strike)) < .1)
+        return Math.abs(pct_change(regular_market_price, option.strike)) < .1
+          // && option.volume > 50
+          // && (option.bid != 0 && option.ask != 0) &&
+          && true;
       };
       const toExpectedReturn = (option) => {
         const strike = option.strike;

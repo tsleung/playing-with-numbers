@@ -1,12 +1,12 @@
 define([
   'tf','serializeJSON','rxjs','invest/rh','utils/pct_change','jquery','utils/mean', 'utils/stdev',
-  'utils/sum','utils/nominal_to_percent_change',
+  'utils/sum','utils/nominal_to_percent_change','dt',
   'invest/create_universe_fs', 'invest/create_universe_rh','invest/universe_to_pct_change',
   'invest/append_line_graph', 'invest/sharpe_ratio', 'invest/sortino_ratio'
 ],
   (
     tf,serializeJSON,rxjs, rh,pct_change,$,mean,stdev,
-    sum, nominal_to_percent_change,
+    sum, nominal_to_percent_change,dt,
     create_close_universe_fs, create_close_universe_rh,universe_to_pct_change,
     append_line_graph, sharpe_ratio, sortino_ratio
   ) => {

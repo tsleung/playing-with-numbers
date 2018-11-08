@@ -14,6 +14,8 @@ define(['jquery'], function($) {
       // strip headers and get close price
       console.log('responses', responses)
       return responses.map(response => {
+        // pop empty last row
+        response.pop();
         // reverse sort order to recent first
         response.reverse();
         // strip the header
