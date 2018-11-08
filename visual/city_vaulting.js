@@ -3,8 +3,7 @@ define(['jquery','three'], ($,THREE) => {
     console.log('THREE', THREE);
     var scene = new THREE.Scene();
 		var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.0001, 1000 );
-    position(camera, {y: 30, z: 150})
-    rotation(camera, {x: 50})
+    Object.assign(camera.position,{y:20,z:100});
     console.log('camera',camera)
     window.camera = camera;
 		var renderer = new THREE.WebGLRenderer();
@@ -15,18 +14,18 @@ define(['jquery','three'], ($,THREE) => {
 
     var cube1 = create_building();
     var cube2 = create_building();
-    new Array(10).fill(0).forEach((nil, x) => {
-      return new Array(10).fill(0).forEach((nil, z) => {
+    new Array(100).fill(0).forEach((nil, x) => {
+      return new Array(100).fill(0).forEach((nil, z) => {
         const building = create_building();
         position(building,{
-          x:-150 + x * 30 + 20,
-          z:-150 + z * 30 + 20
+          x:-1000 + x * 30 + 20,
+          z:-1000 + z * 30 + 20
         });
         scene.add(building);
       });
     });
 
-    const people = new Array(5).fill(0).map((nul, x) => {
+    const people = new Array(2000).fill(0).map((nul, x) => {
       const person = create_person();
       position(person,{
         x: Math.random() * 1000,
@@ -61,14 +60,26 @@ define(['jquery','three'], ($,THREE) => {
     function rotation(obj, options) {
       Object.assign(obj.rotation, options);
     }
+    $('body').on('mousemove', (e) => {
+      const width = $('body').width();
+      const height = $('body').height();
+      const x = 1 * (e.clientX - (width / 2));
+      const y = Math.max(0,-1 * (e.clientY - (height / 2)));
 
+      position(camera, {x,y});
+      rotation(camera, {x: y / -100,y: x / -100});
+
+
+
+    });
 		var animate = function () {
       requestAnimationFrame( animate );
+
+
       // console.log('animating')
 
-      // camera.position.z = camera.position.z > -500 ?
-      //   camera.position.z - 2 : 1000;
-
+      camera.position.z = camera.position.z > -500 ?
+        camera.position.z - 2 : 1000;
 
       people.forEach(person => {
         person.position.x = person.position.x > -1000 ?
