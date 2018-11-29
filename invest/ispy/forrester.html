@@ -26,42 +26,6 @@ input[type="text"], input[type="number"] {
 </style>
 </head>
 <body>
-
-  <form class="settings">
-    <span class="underlying">
-      Underlying
-      <input type="text" name="underlying[symbol]" placeholder="Symbol"/>
-      <input type="number" name="underlying[price]" placeholder="Price"/>
-    </span>
-    <span class="option">
-      Option
-      <input type="number" name="option[strike]" placeholder="Strike"/>
-      <input type="text" name="option[price]" placeholder="Price"/>
-      <input type="number" name="option[days_to_expiration]" placeholder="Days to expiration"/>
-    </span>
-    <div class="bet_size">
-      <input type="range" name="bet_size" min="0" max=".5" step=".001" value="0" class="slider">
-      <label>Bet size <span class="current"></span></label>
-    </div>
-  </form>
-  <section class='explore'>
-    <h2>Explore</h2>
-    <section class="summary">
-
-    </section>
-    <section class="simulation">
-
-    </section>
-  </section>
-  <section class='portfolio'>
-    <h2>Portfolio</h2>
-    <section class="summary">
-
-    </section>
-    <section class="simulation">
-
-    </section>
-  </section>
   <script type="text/javascript">
       require.config({
       shim : {
@@ -87,8 +51,7 @@ input[type="text"], input[type="number"] {
     });
   </script>
   <script>
-    require(['./ispy'], (index) => index());
-    // require(['option_return_research'], (index) => index());
+    require(['./forrester'], (index) => index());
   </script>
 </body>
 </html>
