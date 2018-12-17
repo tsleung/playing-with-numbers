@@ -1,0 +1,6 @@
+After installing virtualenv, pip
+
+pip install tensorflow
+pip install jupyter
+pip install matplotlib
+pip install seaborn
