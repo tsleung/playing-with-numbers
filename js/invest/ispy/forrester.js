@@ -1,14 +1,9 @@
-const ACTIONS = {
-  LONG: 1,
-  HOLD: 0,
-  SHORT: -1,
-};
-
 define([
   './fetch_single_stock_history',
   './option_chain_fetcher',
   'dt',
   '../sharpe_ratio',
+  'utils/mean',
   'utils/mean'
 ], function(
   fetch_historical,
@@ -16,6 +11,7 @@ define([
   dt,
   sharpe_ratio,
   mean,
+  sum,
 ) {
     return carver;
 
@@ -27,10 +23,10 @@ define([
         // 'XLF',
         // 'XLK',
       ];
-      let training_set = [];
+
+      let trainingSet = [];
       const historical = await Promise.all(securities.map(fetch_historical));
-      const trained_model = train(3); // do something with trained model?
-      
+      const trained_model = train(20); // do something with trained model?
 
       function train(iterations) {
         return new Array(iterations).fill(historical).reduce((model, historical, i) => {
@@ -42,56 +38,52 @@ define([
             .sort((a,b) => b.performance - a.performance);
           const performance = ranked_series.map(agg => agg.performance);
           console.log(i,'performance', mean(performance), sharpe_ratio(performance),performance);
+
+          trainingSet = [
+            ...ranked_series.map(agg => {
+              // const raw_performance = series.reduce((amt, trade) => trade.outcome * amt, 1);
+              // const performance =  Math.round(raw_performance / series.length * 1000) / 1000;
+              agg.series.performance = Math.round(agg.performance* 100)/100 || 0;
+              return agg.series;
+            }),
+            ...trainingSet
+          ].slice(0,20000);
+
           
-          training_set = ranked_series.map(agg => agg.series)
-            .slice(0, ranked_series.length / 4)
-            .concat(training_set)
-            .slice(0,20000);
+          console.log('trainingSet', trainingSet);
 
           return new dt.RandomForest({
-            trainingSet: training_set,
-            categoryAttr: 'action',
+            trainingSet,
+            categoryAttr: 'performance',
             ignoredAttributes: []
-          }, 128);
+          }, 8);
 
-        }, {predict: () => Math.round(Math.random() * 100)});
+        }, {predict: () => Math.random() * 2 - 1});
       }
 
       function run_simulation(historical, model) {
         const max_valid_index = Math.min.apply(Math, historical.map(arr=>arr.length)) - 201;
         // run n number of simulations trading our historical universe
-        return new Array(1000).fill(historical).map(historical => {
+        return new Array(80).fill(historical).map(historical => {
           // for each series of our historical set, trade
           return historical.map(series => runTest(series));
 
           function runTest(series) {
             // generate sample periods to trade
-            const indexes = new Array(50).fill(0).map(n => Math.floor(Math.random() * max_valid_index)).sort((a,b) => a - b);
-            // for each index, calculate actions
-            const trades = indexes.map(index => {
+            const indexes = new Array(10).fill(0).map(n => Math.floor(Math.random() * max_valid_index)).sort((a,b) => a - b);
+            return indexes.map(index => {
               const features = extract_features(series, index+1);
-              const action = policy(features);
+              const prediction = policy(features);
               const change = pct_change(series[index+1].close,series[index].close);
-              const outcome = action == 1 ? 1+change : 1;
-              return {index, action, outcome, features};
+              const outcome = prediction > 0 ? 1+change : 1;
+              return {index, prediction, outcome, features};
             });
-
-            const outcomes = trades.map(trade => {
-
-              const outcome = action == 1 ? 1+change : 1;
-
-              return Object.assign({}, trade, {outcome});
-            });
-
-            return outcomes;
           }
 
           function policy(features) {
-              const action =  Math.random() < .8 ?
+              return Math.random() < .8 ?
                 exploit(features):// exploit
                 explore(features);// explore
-
-              return action;
           }
 
           function extract_features(series, index) {
@@ -103,20 +95,28 @@ define([
           }
 
           function explore(features) { // do nothing with features, random act
-            return Math.random() > 1/2 ? ACTIONS.LONG : ACTIONS.SHORT;
+            return Math.random() * 2 - 1; //get a value between -1 and 1
           }
 
           function exploit(features) { // predict based on features
-            const prediction = model.predict(features);
-            const determine_action = () => ACTIONS[prediction];
-            const throw_error = () => {
-              throw new Error('Action undefined')
-            };
+            const votes =  model.predict(features);
+            let prediction
+            if(!isNaN(votes)){
+              prediction = votes;
+            } else if (votes instanceof Object) {
+              const num_votes = sum(Object.keys(votes));
+              prediction = Object.keys(votes).reduce((accum, key) => {
+                return accum + (key * votes[key]);
+              }, 0) / num_votes;
+            } else {
+              debugger;
+            }
             
-            return prediction ?  determine_action() : throw_error();
+            window.prediction = window.prediction || {};
+            window.prediction[prediction] = (window.prediction[prediction] || 0) + 1;
+            return prediction;
           }
         });
       }
     }
-
 });
